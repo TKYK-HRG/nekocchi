@@ -1388,6 +1388,7 @@ function enterApp(onReady){
     }
     startRealtimeSync();
     startPresence();
+    initGameListeners();
     setInterval(updateChuruBtn,60000);
     setInterval(()=>{applyBoostTick();checkEvo();if(curTab==='H')updateHouse();},60000);
     setInterval(()=>{applyDecay();checkNeglect();},60*60*1000); // 1時間ごと
@@ -1493,34 +1494,36 @@ function endNekoGame(escaped){
   }
 }
 
-// Touch/click to move player
-document.getElementById('ngArena').addEventListener('touchstart',e=>{
-  if(!ngRunning)return;
-  e.preventDefault();
-  const touch=e.touches[0];
-  const arena=document.getElementById('ngArena').getBoundingClientRect();
-  ngPX=((touch.clientX-arena.left)/arena.width)*100;
-  ngPY=((touch.clientY-arena.top)/arena.height)*100;
-  ngPX=Math.max(0,Math.min(90,ngPX));
-  ngPY=Math.max(0,Math.min(88,ngPY));
-  positionEl('ngPlayer',ngPX,ngPY);
-},{passive:false});
+// ══ GAME EVENT LISTENERS（安全にラップ）══
+function initGameListeners(){
+  const arena=document.getElementById('ngArena');
+  if(!arena)return;
+  arena.addEventListener('touchstart',e=>{
+    if(!ngRunning)return;
+    e.preventDefault();
+    const touch=e.touches[0];
+    const rect=arena.getBoundingClientRect();
+    ngPX=Math.max(0,Math.min(90,((touch.clientX-rect.left)/rect.width)*100));
+    ngPY=Math.max(0,Math.min(88,((touch.clientY-rect.top)/rect.height)*100));
+    positionEl('ngPlayer',ngPX,ngPY);
+  },{passive:false});
+  arena.addEventListener('click',e=>{
+    if(!ngRunning)return;
+    const rect=arena.getBoundingClientRect();
+    ngPX=Math.max(0,Math.min(90,((e.clientX-rect.left)/rect.width)*100));
+    ngPY=Math.max(0,Math.min(88,((e.clientY-rect.top)/rect.height)*100));
+    positionEl('ngPlayer',ngPX,ngPY);
+  });
+  const resultBtn=document.getElementById('ngResultBtn');
+  if(resultBtn) resultBtn.addEventListener('click',()=>{
+    document.getElementById('nekoGame').classList.remove('show');
+    updateHouse();
+  });
+  const jarashiBtn=document.getElementById('jarashiBtn');
+  if(jarashiBtn) jarashiBtn.addEventListener('click',startNekoGame);
+}
 
-document.getElementById('ngArena').addEventListener('click',e=>{
-  if(!ngRunning)return;
-  const arena=document.getElementById('ngArena').getBoundingClientRect();
-  ngPX=((e.clientX-arena.left)/arena.width)*100;
-  ngPY=((e.clientY-arena.top)/arena.height)*100;
-  ngPX=Math.max(0,Math.min(90,ngPX));
-  ngPY=Math.max(0,Math.min(88,ngPY));
-  positionEl('ngPlayer',ngPX,ngPY);
-});
-
-document.getElementById('ngResultBtn').addEventListener('click',()=>{
-  document.getElementById('nekoGame').classList.remove('show');
-  updateHouse();
-});
-document.getElementById('jarashiBtn').addEventListener('click',startNekoGame);
+document.getElementById('enterBtn').addEventListener('click',tryEnter);
 document.getElementById('nin').addEventListener('keydown',e=>{if(e.key==='Enter')tryEnter();});
 
 // ══ RENAME ══
