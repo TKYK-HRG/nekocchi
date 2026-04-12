@@ -424,8 +424,10 @@ function load(cb){
 }
 
 // Save state/cats/album only (messages use push)
+let lastStateSaveTs=0;
 function saveState(){
   if(!dbReady)return;
+  lastStateSaveTs=Date.now();
   const cObj={},aObj={};
   cats.forEach((c,i)=>cObj[i]=c);
   album.forEach((a,i)=>aObj[i]=a);
@@ -550,13 +552,23 @@ function startRealtimeSync(){
   // ── State ──
   REF.child('state').on('value',snap=>{
     if(!dbReady||!snap.val())return;
+    // 自分がsaveしてから2秒以内はlove/happyを上書きしない
+    if(Date.now()-lastStateSaveTs<2000) return;
     const ns=snap.val();
     state.love=ns.love??state.love;
     state.happy=ns.happy??state.happy;
     state.lastEgg=ns.lastEgg??state.lastEgg;
     state.lastEgg20=ns.lastEgg20??state.lastEgg20;
+    state.lastChuru=ns.lastChuru??state.lastChuru;
+    state.churuLocked=ns.churuLocked??state.churuLocked;
     if(curTab==='H') updateHouse();
   });
+  // saveState時にタイムスタンプを記録
+  const _origSaveState=saveState;
+  window._saveStateWrapper=function(){
+    lastStateSaveTs=Date.now();
+    _origSaveState();
+  };
 }
 
 // Boost stored in Firebase too
@@ -1091,9 +1103,25 @@ function updateHouse(){
   document.getElementById('shp').style.width=state.happy+'%';document.getElementById('vh').textContent=state.happy+'%';
   renderCats();updateChuruBtn();checkNeglect();
   const travel=cats.filter(c=>c.traveling);
-  let info='📅 毎月10日確定・20日50%でたまごが生まれるにゃ\n🐟 チュールは1日1回あげられるにゃ\n💬 3日前までの会話しか見えないにゃ（猫は忘れっぽいにゃｗ）';
-  if(cats.length>3)info='⚠️ 猫が3匹を超えた！にゃおうさまが旅に出るにゃ\n'+info;
-  if(travel.length>0)info='✈️ 旅中: '+travel.map(c=>c.name).join('・')+'\n'+info;
+
+  // love コメント（3段階）
+  let loveMsg='';
+  if(state.love>=70) loveMsg='❤️ ふたりの仲はバッチリにゃ！';
+  else if(state.love>=30) loveMsg='🧡 もっとお話ししてなかよくなるにゃ';
+  else loveMsg='💔 仲良し度が低いにゃ…チュールをあげてにゃ';
+
+  // happy コメント（3段階）
+  let happyMsg='';
+  if(state.happy>=70) happyMsg='😸 猫たちはごきげんにゃ！';
+  else if(state.happy>=30) happyMsg='😐 猫のきぶんがいまひとつにゃ…';
+  else happyMsg='😿 猫がふきげんにゃ！話しかけてにゃ！';
+
+  let info=loveMsg+'\n'+happyMsg;
+  info+='\n📅 毎月10日確定・20日50%でたまごが生まれるにゃ';
+  info+='\n🐟 チュールは1日1回あげられるにゃ';
+  info+='\n💬 3日前までの会話しか見えないにゃ（猫は忘れっぽいにゃｗ）';
+  if(cats.length>3) info='⚠️ 猫が3匹を超えた！にゃおうさまが旅に出るにゃ\n'+info;
+  if(travel.length>0) info='✈️ 旅中: '+travel.map(c=>c.name).join('・')+'\n'+info;
   document.getElementById('hi').textContent=info;
 }
 
