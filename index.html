@@ -92,6 +92,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .cc{background:#FFFFFF88;border:2px solid #FFE0C8;border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:96px;flex:1;cursor:pointer;transition:transform .15s,border-color .15s;position:relative;}
 .cc:hover{transform:translateY(-3px);border-color:var(--accent);}
 .cc .ce{font-size:44px;line-height:1;filter:drop-shadow(0 3px 8px #00000015);}
+.cc .ce-img{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2.5px solid #FFE0C8;box-shadow:0 3px 10px #00000020;}
 .cc .cn{font-size:12px;font-weight:700;color:var(--dark);}
 .cc .cs{font-size:10px;color:var(--mocha);}
 .cc .ca{font-size:10px;color:#AAA;}
@@ -131,7 +132,9 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .mr{display:flex;gap:7px;align-items:flex-end;animation:mi .22s ease;}
 @keyframes mi{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 .mr.me{flex-direction:row-reverse;}
-.av{width:30px;height:30px;border-radius:50%;background:var(--warm);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 2px 6px #00000012;}
+.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 2px 6px #00000012;background:var(--warm);}
+.av.av-me{background:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23A0A8B0'/%3E%3C!-- ears --%3E%3Cpolygon points='22,28 10,8 36,22' fill='%238090A0'/%3E%3Cpolygon points='78,28 90,8 64,22' fill='%238090A0'/%3E%3Cpolygon points='24,27 14,12 34,22' fill='%23C8B8C0'/%3E%3Cpolygon points='76,27 86,12 66,22' fill='%23C8B8C0'/%3E%3C!-- face --%3E%3Cellipse cx='50' cy='54' rx='28' ry='26' fill='%23C8D0D8'/%3E%3C!-- eyes --%3E%3Cellipse cx='40' cy='48' rx='5' ry='6' fill='%2360A060'/%3E%3Cellipse cx='60' cy='48' rx='5' ry='6' fill='%2360A060'/%3E%3Cellipse cx='40' cy='49' rx='2.5' ry='4' fill='%23222'/%3E%3Cellipse cx='60' cy='49' rx='2.5' ry='4' fill='%23222'/%3E%3C!-- nose --%3E%3Cellipse cx='50' cy='58' rx='3' ry='2' fill='%23E08080'/%3E%3C!-- mouth --%3E%3Cpath d='M44 61 Q50 66 56 61' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C!-- whiskers --%3E%3Cline x1='18' y1='57' x2='43' y2='59' stroke='%23999' stroke-width='1'/%3E%3Cline x1='18' y1='62' x2='43' y2='61' stroke='%23999' stroke-width='1'/%3E%3Cline x1='57' y1='59' x2='82' y2='57' stroke='%23999' stroke-width='1'/%3E%3Cline x1='57' y1='61' x2='82' y2='62' stroke='%23999' stroke-width='1'/%3E%3C/svg%3E");background-size:cover;}
+.av.av-other{background:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23E8E4DE'/%3E%3C!-- ears --%3E%3Cpolygon points='22,28 10,8 36,22' fill='%23D8D0C8'/%3E%3Cpolygon points='78,28 90,8 64,22' fill='%23D8D0C8'/%3E%3Cpolygon points='24,27 14,12 34,22' fill='%23F0C8C8'/%3E%3Cpolygon points='76,27 86,12 66,22' fill='%23F0C8C8'/%3E%3C!-- face --%3E%3Cellipse cx='50' cy='54' rx='28' ry='26' fill='%23F8F4F0'/%3E%3C!-- eyes --%3E%3Cellipse cx='40' cy='48' rx='5' ry='6' fill='%2380C0E0'/%3E%3Cellipse cx='60' cy='48' rx='5' ry='6' fill='%2380C0E0'/%3E%3Cellipse cx='40' cy='49' rx='2.5' ry='4' fill='%23222'/%3E%3Cellipse cx='60' cy='49' rx='2.5' ry='4' fill='%23222'/%3E%3C!-- nose --%3E%3Cellipse cx='50' cy='58' rx='3' ry='2' fill='%23E08080'/%3E%3C!-- mouth --%3E%3Cpath d='M44 61 Q50 66 56 61' stroke='%23AAA' stroke-width='1.5' fill='none'/%3E%3C!-- whiskers --%3E%3Cline x1='18' y1='57' x2='43' y2='59' stroke='%23CCC' stroke-width='1'/%3E%3Cline x1='18' y1='62' x2='43' y2='61' stroke='%23CCC' stroke-width='1'/%3E%3Cline x1='57' y1='59' x2='82' y2='57' stroke='%23CCC' stroke-width='1'/%3E%3Cline x1='57' y1='61' x2='82' y2='62' stroke='%23CCC' stroke-width='1'/%3E%3C/svg%3E");background-size:cover;}
 .mi2{display:flex;flex-direction:column;max-width:74%;}
 .mr.me .mi2{align-items:flex-end;}
 .mn{font-size:10px;color:var(--mocha);font-weight:700;margin-bottom:2px;}
@@ -317,7 +320,12 @@ const SP=[
 // ══ CONFIG ══
 const DEMO=false; // trueにするとスピードアップ(テスト用)
 const DMS=DEMO?60*1000:24*60*60*1000;
-const STG=[{n:'たまご',e:'🥚',d:0},{n:'こねこ',e:'🐱',d:1/24},{n:'ねこ',e:'😺',d:3},{n:'にゃおうさま',e:'👑',d:15}];
+const STG=[
+  {n:'たまご',    e:'🥚', d:0},
+  {n:'こねこ',    e:'🐱', d:1/24, img:'https://TKYK-HRG.github.io/nekocchi/mike.jpg'},
+  {n:'ねこ',      e:'😺', d:3},
+  {n:'にゃおうさま',e:'👑',d:15},
+];
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
 const TNEG=DEMO?2*60*1000:48*60*60*1000;
 const TTV=DEMO?15*1000:6*60*60*1000;
@@ -789,9 +797,14 @@ function catType(text,delay,catName){
     const area=document.getElementById('cs');
     if(!area)return;
     const cat=cats.find(c=>c.name===catName)||cats[0];
+    const st=cat?stOf(cat):null;
     const typId='typ_'+Date.now();
     const row=document.createElement('div');row.id=typId;row.className='mr';
-    row.innerHTML=`<div class="av">${cat?stOf(cat).e:'🐱'}</div><div class="mi2"><div class="mn">${cat?cat.name:'ねこ'}</div><div class="bl bc"><div class="td"><span></span><span></span><span></span></div></div></div>`;
+    // avatar: photo or emoji
+    const avHtml=st?.img
+      ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px #00000012;">`
+      :`<div class="av">${st?st.e:'🐱'}</div>`;
+    row.innerHTML=`${avHtml}<div class="mi2"><div class="mn">${cat?cat.name:'ねこ'}</div><div class="bl bc"><div class="td"><span></span><span></span><span></span></div></div></div>`;
     area.appendChild(row);area.scrollTop=area.scrollHeight;
     setTimeout(()=>{const el=document.getElementById(typId);if(el)el.remove();addMsg('__C__',text,cat?.name);},900);
   },delay);
@@ -827,13 +840,30 @@ function renderMsgs(){
     const row=document.createElement('div');
     row.className='mr'+(isMe?' me':'');
 
-    let avEmoji='😄';
-    if(isMe) avEmoji='😊';
-    else if(isCat){
+    let avEmoji='🐱';
+    let avImg=null;
+    let avClass='av';
+    let avText=true;
+    if(isMe){
+      avClass='av av-me'; avText=false;
+    } else if(isCat){
       const tc=cats.find(c=>c.name===m.catName)||cats[0];
-      avEmoji=tc?stOf(tc).e:'🐱';
+      if(tc){
+        const tst=stOf(tc);
+        if(tst.img) avImg=tst.img;
+        else { avEmoji=tst.e; avClass='av'; avText=true; }
+      } else { avEmoji='🐱'; avText=true; }
+    } else {
+      avClass='av av-other'; avText=false;
     }
-    const avel=document.createElement('div');avel.className='av';avel.textContent=avEmoji;
+    const avel=document.createElement(avImg?'img':'div');
+    avel.className=avClass;
+    if(avImg){
+      avel.src=avImg;
+      avel.style.cssText='width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px #00000012;';
+    } else if(avText){
+      avel.textContent=avEmoji;
+    }
 
     const inner=document.createElement('div');inner.className='mi2';
     if(isMe) inner.style.alignItems='flex-end';
@@ -896,7 +926,15 @@ function renderCats(){
     const card=document.createElement('div');card.className='cc';
     if(cat.traveling){const b=document.createElement('div');b.className='tbdg';b.textContent='✈️旅中';card.appendChild(b);}
     if(st.n==='たまご'){const b=document.createElement('div');b.className='ebdg';b.textContent='🥚NEW';card.appendChild(b);}
-    const ce=document.createElement('div');ce.className='ce';ce.textContent=cat.traveling?'✈️':st.e;
+    const ce=document.createElement(st.img?'img':'div');
+    if(st.img&&!cat.traveling){
+      ce.className='ce-img';
+      ce.src=st.img;
+      ce.alt=st.n;
+    } else {
+      ce.className='ce';
+      ce.textContent=cat.traveling?'✈️':st.e;
+    }
     const cn=document.createElement('div');cn.className='cn';cn.textContent=cat.name;
     const cs=document.createElement('div');cs.className='cs';cs.textContent=st.n;
     const ca=document.createElement('div');ca.className='ca';ca.textContent=days+'日め';
