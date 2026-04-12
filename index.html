@@ -165,12 +165,23 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
   <div class="ls">ふたりだけのひみつの場所🏠<br>お名前をいれてね</div>
   <input class="lin" id="nin" placeholder="あなたのなまえ" maxlength="12" autocomplete="off">
   <button class="lbtn" id="enterBtn">はいる 🐾</button>
+  <button class="lbtn" id="renameBtn" style="background:#FFFFFF60;color:var(--mocha);box-shadow:none;font-size:13px;padding:10px 24px;">✏️ 名前をリセット</button>
   <div class="lerr" id="lerr"></div>
 </div>
 
 <div class="screen hidden" id="fullScreen">
   <div class="fi">🙀</div>
   <p>ごめんね…<br>このおうちにはもうふたりいるから<br>はいれないにゃ 🐾</p>
+</div>
+
+<!-- RENAME MODAL -->
+<div class="screen hidden" id="renameScreen" style="background:rgba(61,35,20,.88);backdrop-filter:blur(10px);gap:16px;padding:40px;">
+  <div style="font-size:48px">✏️</div>
+  <div style="color:#fff;font-size:18px;font-weight:900;">名前をリセット</div>
+  <div style="color:#FFD4B8;font-size:13px;text-align:center;line-height:1.8;">登録された名前を削除して<br>最初からやり直せるにゃ🐾<br><span style="color:#FFB7A3;font-size:11px;">※猫・チャット・アルバムはそのまま残るよ</span></div>
+  <button class="lbtn" id="renameConfirmBtn" style="background:#FF6B6B;">✏️ 名前だけリセットする</button>
+  <button class="lbtn" id="renameCancelBtn" style="background:#FFFFFF30;color:#fff;box-shadow:none;">もどる</button>
+  <div style="color:#FFB7A3;font-size:11px;" id="renameMsg"></div>
 </div>
 
 <div class="screen hidden" id="clearScreen">
@@ -316,15 +327,20 @@ function load(cb){
     msgs=d.msgs?Object.values(d.msgs).sort((a,b)=>a.ts-b.ts):[];
     cats=d.cats?Object.values(d.cats):[];
     album=d.album?Object.values(d.album):[];
-    if(!cats.length)spawnCat(true);
     dbReady=true;
+    if(!cats.length){
+      // First time: spawn cat then callback
+      const name=CNAMES[0];
+      cats.push({id:Date.now(),name,born:Date.now(),si:0,traveling:false});
+      save();
+    }
     if(cb)cb();
   });
 }
 
 function save(){
   if(!dbReady)return;
-  // Convert arrays to objects for Firebase
+  lastSaveTs=Date.now();
   const mObj={},cObj={},aObj={};
   msgs.slice(-500).forEach((m,i)=>mObj[i]=m);
   cats.forEach((c,i)=>cObj[i]=c);
@@ -339,15 +355,17 @@ function gu(cb){
 function su(u){db.ref('nekotchi_users').set(u);}
 
 // Realtime listener: sync state when other user makes changes
+let lastSaveTs=0;
 function startRealtimeSync(){
   REF.on('value',snap=>{
     const d=snap.val();
     if(!d||!dbReady)return;
+    // Ignore events triggered by our own save (within 2 seconds)
+    if(Date.now()-lastSaveTs<2000)return;
     const newMsgs=d.msgs?Object.values(d.msgs).sort((a,b)=>a.ts-b.ts):[];
     const newCats=d.cats?Object.values(d.cats):[];
     const newAlbum=d.album?Object.values(d.album):[];
     const newState=d.state||state;
-    // Only update if changed (avoid re-render loop)
     if(JSON.stringify(newMsgs)!==JSON.stringify(msgs)){
       msgs=newMsgs;
       if(curTab==='C')renderMsgs();
@@ -355,7 +373,7 @@ function startRealtimeSync(){
     }
     if(JSON.stringify(newCats)!==JSON.stringify(cats)){
       cats=newCats;
-      if(curTab==='H')updateHouse();
+      if(curTab==='H')renderCats();
     }
     if(JSON.stringify(newAlbum)!==JSON.stringify(album)){
       album=newAlbum;
@@ -378,15 +396,20 @@ function getBoostSync(){
 db.ref('nekotchi_boost').on('value',snap=>{ window._lastBoost=snap.val()||null; });
 
 // ══ CATS ══
-function stOf(cat){const d=(Date.now()-cat.born)/DMS;let s=STG[0];STG.forEach(x=>{if(d>=x.d)s=x;});return s;}
-function stIdx(cat){return STG.indexOf(stOf(cat));}
-function isNyao(cat){return stOf(cat).n==='にゃおうさま';}
+// (stOf, stIdx, isNyao are defined after boost section to use boostedAge)
 
 function spawnCat(first){
   const name=CNAMES[cats.length%CNAMES.length];
   cats.push({id:Date.now(),name,born:Date.now(),si:0,traveling:false});
   save();
-  if(!first){notify('🥚 '+name+' のたまごが生まれた！');catType('🥚 にゃおうさまがたまごを産んだにゃ！\nようこそ、'+name+'ちゃん！',400,name);confetti();}
+  if(!first){
+    setTimeout(()=>{
+      notify('🥚 '+name+' のたまごが生まれた！');
+      catType('🥚 にゃおうさまがたまごを産んだにゃ！\nようこそ、'+name+'ちゃん！',400,name);
+      confetti();
+      updateHouse();
+    },500);
+  }
 }
 
 function checkEvo(){
@@ -574,15 +597,14 @@ function stIdx(cat){return STG.indexOf(stOf(cat));}
 function isNyao(cat){return stOf(cat).n==='にゃおうさま';}
 
 // Accumulate bonus days from active boost (called periodically)
+function boostMultiplier(){const b=getBoostSync();if(!b||b.until<=Date.now())return 1;return b.type==='gold'?2:1.5;}
 function applyBoostTick(){
-  const b=getBoost();
+  const b=getBoostSync();
   if(!b||b.until<=Date.now())return;
-  const mult=boostMultiplier(); // 2 or 1.5x
-  const extraPerMin=(mult-1)/24/60; // extra virtual days per real minute
+  const mult=boostMultiplier();
+  const extraPerMin=(mult-1)/24/60;
   cats.forEach(cat=>{
-    if(!cat.traveling){
-      cat.bonusDays=(cat.bonusDays||0)+extraPerMin;
-    }
+    if(!cat.traveling) cat.bonusDays=(cat.bonusDays||0)+extraPerMin;
   });
   save();
 }
@@ -640,11 +662,13 @@ function catType(text,delay,catName){
   delay=delay??700;
   setTimeout(()=>{
     const area=document.getElementById('cs');
+    if(!area)return;
     const cat=cats.find(c=>c.name===catName)||cats[0];
-    const row=document.createElement('div');row.id='typ';row.className='mr';
+    const typId='typ_'+Date.now();
+    const row=document.createElement('div');row.id=typId;row.className='mr';
     row.innerHTML=`<div class="av">${cat?stOf(cat).e:'🐱'}</div><div class="mi2"><div class="mn">${cat?cat.name:'ねこ'}</div><div class="bl bc"><div class="td"><span></span><span></span><span></span></div></div></div>`;
     area.appendChild(row);area.scrollTop=area.scrollHeight;
-    setTimeout(()=>{const el=document.getElementById('typ');if(el)el.remove();addMsg('__C__',text,cat?.name);},900);
+    setTimeout(()=>{const el=document.getElementById(typId);if(el)el.remove();addMsg('__C__',text,cat?.name);},900);
   },delay);
 }
 
@@ -786,9 +810,12 @@ function tryEnter(){
     if(u.includes(name)){myName=name;enterApp();return;}
     if(u.length<2){
       const nu=[...u,name];su(nu);window._cachedUsers=nu;
-      myName=name;enterApp();
-      if(nu.length===1)setTimeout(()=>catType('はじめまして！'+name+'ちゃん！🐱\nもうひとりのひとをまってるにゃ…',800,cats[0]?.name),600);
-      else setTimeout(()=>catType('わーい！'+name+'ちゃんも来たにゃ！\nこれでふたりそろったよ💕',800,cats[0]?.name),600);
+      myName=name;
+      const isFirst=nu.length===1;
+      enterApp(()=>{
+        if(isFirst)catType('はじめまして！'+name+'ちゃん！🐱\nもうひとりのひとをまってるにゃ…',800,cats[0]?.name);
+        else catType('わーい！'+name+'ちゃんも来たにゃ！\nこれでふたりそろったよ💕',800,cats[0]?.name);
+      });
       return;
     }
     document.getElementById('lockScreen').classList.add('hidden');
@@ -796,20 +823,22 @@ function tryEnter(){
   });
 }
 
-function enterApp(){
+function enterApp(onReady){
   document.getElementById('lockScreen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
-  // Show loading state
-  document.getElementById('houseInfo').textContent='🐾 よみこみちゅう…';
+  document.getElementById('hi').textContent='🐾 よみこみちゅう…';
   load(()=>{
     updateHouse();renderMsgs();updateAlbum();updateBadges();checkEvo();checkNeglect();
     document.getElementById('lockIcon').textContent=cats[0]?stOf(cats[0]).e:'🐱';
-    const g=['にゃ！きてくれた！🐾','おかえり！まってたにゃ💕','こんにちは！なでて🐱'];
-    const nyao=cats.find(c=>isNyao(c));
-    const vis=msgs.filter(m=>m.ts>Date.now()-T3D);
-    if(!vis.length)catType('にゃ！ようこそ '+myName+' ちゃん🐾\nここはふたりだけのひみつのおうちだよ！\n毎日チュールをあげてね🐟',800,cats[0]?.name);
-    else if(nyao)catType(nyao.name+'「'+myName+'よ、よう来たのじゃ💕」',600,nyao.name);
-    else catType(r(g),600,cats[0]?.name);
+    if(onReady){ onReady(); }
+    else {
+      const g=['にゃ！きてくれた！🐾','おかえり！まってたにゃ💕','こんにちは！なでて🐱'];
+      const nyao=cats.find(c=>isNyao(c));
+      const vis=msgs.filter(m=>m.ts>Date.now()-T3D);
+      if(!vis.length)catType('にゃ！ようこそ '+myName+' ちゃん🐾\nここはふたりだけのひみつのおうちだよ！\n毎日チュールをあげてね🐟',800,cats[0]?.name);
+      else if(nyao)catType(nyao.name+'「'+myName+'よ、よう来たのじゃ💕」',600,nyao.name);
+      else catType(r(g),600,cats[0]?.name);
+    }
     startRealtimeSync();
     setInterval(updateChuruBtn,60000);
     setInterval(()=>{applyBoostTick();checkEvo();if(curTab==='H')updateHouse();},60000);
@@ -817,6 +846,33 @@ function enterApp(){
 }
 document.getElementById('enterBtn').addEventListener('click',tryEnter);
 document.getElementById('nin').addEventListener('keydown',e=>{if(e.key==='Enter')tryEnter();});
+
+// ══ RENAME ══
+document.getElementById('renameBtn').addEventListener('click',()=>{
+  document.getElementById('lockScreen').classList.add('hidden');
+  document.getElementById('renameScreen').classList.remove('hidden');
+});
+document.getElementById('renameCancelBtn').addEventListener('click',()=>{
+  document.getElementById('renameScreen').classList.add('hidden');
+  document.getElementById('lockScreen').classList.remove('hidden');
+});
+document.getElementById('renameConfirmBtn').addEventListener('click',()=>{
+  const msg=document.getElementById('renameMsg');
+  msg.textContent='リセット中にゃ…🐾';
+  db.ref('nekotchi_users').remove().then(()=>{
+    window._cachedUsers=[];
+    msg.textContent='✅ リセット完了！新しい名前で入ってにゃ🐱';
+    setTimeout(()=>{
+      document.getElementById('renameScreen').classList.add('hidden');
+      document.getElementById('lockScreen').classList.remove('hidden');
+      document.getElementById('lerr').textContent='';
+      document.getElementById('nin').value='';
+      document.getElementById('renameMsg').textContent='';
+    },1500);
+  }).catch(()=>{
+    msg.textContent='❌ エラーが発生したにゃ…もう一度試してね';
+  });
+});
 </script>
 </body>
 </html>
