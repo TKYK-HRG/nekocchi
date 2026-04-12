@@ -52,12 +52,10 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .ti{font-size:18px;display:block;margin-bottom:1px;}
 .tbadge{display:inline-block;background:#FF4444;color:#fff;font-size:9px;font-weight:900;border-radius:999px;padding:1px 5px;margin-left:2px;vertical-align:top;margin-top:-1px;}
 /* PANELS */
-.panel{flex:1;overflow-y:auto;display:none;flex-direction:column;min-height:0;}
+.panel{flex:1;display:none;flex-direction:column;min-height:0;}
 .panel.active{display:flex;}
-.panel::-webkit-scrollbar{width:3px;}
-.panel::-webkit-scrollbar-thumb{background:#FFD4B8;border-radius:2px;}
 /* HOUSE */
-#pH{background:var(--cream);}
+#pH{background:var(--cream);overflow-y:auto;}
 .hh{background:linear-gradient(180deg,#FFE0C8,#FFD4B8);padding:12px 16px 10px;flex-shrink:0;}
 .htr{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
 .hm{font-size:12px;color:var(--mocha);font-weight:700;}
@@ -133,7 +131,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .sb2{width:40px;height:40px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:transform .15s;box-shadow:0 3px 10px #FF8C6940;flex-shrink:0;}
 .sb2:hover{transform:scale(1.1);}
 /* ALBUM */
-#pA{padding:14px;gap:10px;}
+#pA{padding:14px 14px 40px;gap:10px;overflow-y:auto;}
 .ah{font-size:13px;font-weight:700;color:var(--mocha);}
 .ap{background:#FFFFFF80;border:1.5px solid #FFE0C8;border-radius:12px;padding:10px 14px;font-size:12px;color:var(--dark);line-height:1.8;}
 .pb{height:10px;border-radius:999px;background:#FFE0C8;overflow:hidden;margin-top:4px;}
@@ -215,7 +213,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
       <div class="hi" id="hi"></div>
     </div>
     <!-- CHAT -->
-    <div class="panel" id="pC" style="overflow:hidden;">
+    <div class="panel" id="pC">
       <div class="cs" id="cs"></div>
       <div class="ib">
         <textarea class="ci" id="ci" placeholder="メッセージを送ろう🐾" rows="1"></textarea>
@@ -613,9 +611,7 @@ function applyBoostTick(){
 }
 
 // ══ CAT SPEECH ══
-// Normal cats: react 1 in 6 messages, only animal sounds
-// Nyaousama: can speak Japanese
-const NYAN=['にゃ','にゃにゃ','にゃ～','ニャ！','にゃにゃにゃ','ごろごろ','ふにゃ','みゃ','ぷにゃ','にゃーん','ごろごろごろ…','ふふ','にゃ？','みゃあ','にゃっ！'];
+const NYAN=['にゃ','にゃにゃ','にゃ～','ニャ！','ごろごろ','ふにゃ','みゃ','にゃーん','ごろごろ…','にゃ？','みゃあ','にゃっ！','ぷにゃ','にゃにゃにゃ'];
 const NYAO_JP={
   pos:['ふたりのなかよしパワー、わらわにも届くのじゃ💕','うむ、よい会話じゃ😸','わらわも幸せな気分じゃ🌸','きゅんとするのじゃ💖'],
   neg:['どうしたのじゃ？😿','わらわがそばにおるぞ🤗','つらいときは話すのじゃ💭'],
@@ -623,37 +619,30 @@ const NYAO_JP={
   shr:['うむ','そうじゃの','もっと話すのじゃ'],
   eve:['夜も仲よしじゃのう🌙','星がきれいな夜じゃ⭐'],
   mor:['良い朝じゃ☀️','朝から元気じゃな🌅'],
-  churu_gold:['な、なんと！金のチュールとは！わらわも大興奮じゃ！！✨👑'],
-  churu_silver:['銀のチュールとは珍しい！今日は特別な日じゃな🌸'],
-  churu_normal:['チュールじゃ！うれしいのじゃ😻'],
 };
 
 function catCmt(text){
-  // 1 in 6 chance of responding
-  state.msgCount = state.msgCount||0;
-  const shouldSpeak = (state.msgCount % 6 === 0);
-  if(!shouldSpeak) return null;
+  // updStats の前に呼ばれるので、現在のmsgCountで判定（6の倍数-1 = 送信後に6の倍数になるタイミング）
+  const cnt=(state.msgCount||0)+1;
+  if(cnt % 6 !== 0) return null;
 
-  // Find a nyaousama to speak, else random normal cat
   const nyao=cats.find(c=>isNyao(c)&&!c.traveling);
-  const normalCat=cats.find(c=>!c.traveling&&!isNyao(c));
-  const speaker=nyao||normalCat||cats[0];
+  const normal=cats.find(c=>!c.traveling&&!isNyao(c));
+  const speaker=nyao||normal||cats[0];
   if(!speaker) return null;
 
   if(isNyao(speaker)){
-    // Nyaousama speaks Japanese
     const sc=senti(text),h=new Date().getHours();
     let line;
-    if(sc>=3)line=r(NYAO_JP.pos);
-    else if(sc<=-1)line=r(NYAO_JP.neg);
-    else if(text.length>30)line=r(NYAO_JP.lon);
-    else if(text.length<5)line=r(NYAO_JP.shr);
-    else if(h>=21||h<=4)line=r(NYAO_JP.eve);
-    else if(h<=9)line=r(NYAO_JP.mor);
+    if(sc>=3) line=r(NYAO_JP.pos);
+    else if(sc<=-1) line=r(NYAO_JP.neg);
+    else if(text.length>30) line=r(NYAO_JP.lon);
+    else if(text.length<5) line=r(NYAO_JP.shr);
+    else if(h>=21||h<=4) line=r(NYAO_JP.eve);
+    else if(h<=9) line=r(NYAO_JP.mor);
     else line=r([...NYAO_JP.pos,...NYAO_JP.lon]);
     return {cat:speaker, text:line};
   } else {
-    // Normal cat: only animal sounds
     return {cat:speaker, text:r(NYAN)};
   }
 }
@@ -677,7 +666,9 @@ function catType(text,delay,catName){
 
 // ══ 3-DAY FILTER + RENDER ══
 function renderMsgs(){
-  const area=document.getElementById('cs');area.innerHTML='';
+  const area=document.getElementById('cs');
+  if(!area)return;
+  area.innerHTML='';
   const cutoff=Date.now()-T3D;
   const hidden=msgs.filter(m=>m.ts<cutoff).length;
   if(hidden>0){
@@ -738,8 +729,12 @@ function renderCats(){
     const card=document.createElement('div');card.className='cc';
     if(cat.traveling){const b=document.createElement('div');b.className='tbdg';b.textContent='✈️旅中';card.appendChild(b);}
     if(st.n==='たまご'){const b=document.createElement('div');b.className='ebdg';b.textContent='🥚NEW';card.appendChild(b);}
-    card.innerHTML+=`<div class="ce">${cat.traveling?'✈️':st.e}</div><div class="cn">${cat.name}</div><div class="cs">${st.n}</div><div class="ca">${days}日め</div>`;
-    card.addEventListener('click',ev=>{
+    const ce=document.createElement('div');ce.className='ce';ce.textContent=cat.traveling?'✈️':st.e;
+    const cn=document.createElement('div');cn.className='cn';cn.textContent=cat.name;
+    const cs=document.createElement('div');cs.className='cs';cs.textContent=st.n;
+    const ca=document.createElement('div');ca.className='ca';ca.textContent=days+'日め';
+    card.appendChild(ce);card.appendChild(cn);card.appendChild(cs);card.appendChild(ca);
+    card.addEventListener('click',()=>{
       state.happy=Math.min(100,state.happy+2);state.petCount=(state.petCount||0)+1;save();updateHouse();
       const rc=card.getBoundingClientRect();spawnR(rc.left+rc.width/2,rc.top+rc.height/2,r(['💕','✨','🐾','💖','😻']));
       if(state.petCount%5===0){const nc=isNyao(cat)?cat.name+'「なでなでしてくれるのじゃ！嬉しいのじゃ💕」':cat.name+'「にゃ～！💕」';catType(nc,300,cat.name);}
