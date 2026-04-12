@@ -447,7 +447,6 @@ function startRealtimeSync(){
   msgs.forEach(m=>knownMsgKeys.add(m.ts+'_'+m.s));
 
   // ── Chat: poll every 3 seconds ──
-  // Simple and reliable - checks for new msgs periodically
   setInterval(()=>{
     REF.child('msgs').once('value',snap=>{
       if(!snap.val())return;
@@ -747,9 +746,12 @@ const NYAO_JP={
   mor:['良い朝じゃ☀️','朝から元気じゃな🌅'],
 };
 
+// Local counter - not affected by remote state sync
+let localMsgCount=0;
+
 function catCmt(text){
-  // updStats already incremented msgCount before this call
-  if((state.msgCount||0) % 6 !== 0) return null;
+  localMsgCount++;
+  if(localMsgCount % 6 !== 0) return null;
 
   const nyao=cats.find(c=>isNyao(c)&&!c.traveling);
   const normal=cats.find(c=>!c.traveling&&!isNyao(c));
@@ -804,7 +806,7 @@ function renderMsgs(){
   const hidden=msgs.filter(m=>m.ts<cutoff).length;
   if(hidden>0){
     const b=document.createElement('div');b.className='fb';
-    b.textContent='🐱 猫は3日で忘れるにゃ… ('+hidden+'件のメッセージは消えたよ)';
+    b.textContent='🐱 猫は3日で忘れるにゃ… ('+hidden+'件)';
     area.appendChild(b);
   }
   const vis=msgs.filter(m=>m.ts>=cutoff);
@@ -812,26 +814,60 @@ function renderMsgs(){
   for(const m of vis){
     const d=new Date(m.ts);
     const ds=d.toLocaleDateString('ja-JP',{month:'long',day:'numeric',weekday:'short'});
-    if(ds!==ld){const div=document.createElement('div');div.className='ds';div.textContent=ds;area.appendChild(div);ld=ds;}
-    const isMe=m.s===myName,isT=m.s==='__T__',isCH=m.s==='__CH__',isCat=m.s.startsWith('__');
-    const row=document.createElement('div');row.className='mr'+(isMe?' me':'');
-    let av='😄';if(isMe)av='😊';else if(isCat){const tc=cats.find(c=>c.name===m.catName)||cats[0];av=tc?stOf(tc).e:'🐱';}
-    const avel=document.createElement('div');avel.className='av';avel.textContent=av;
-    const inner=document.createElement('div');inner.className='mi2';if(isMe)inner.style.alignItems='flex-end';
-    if(!isMe){const sn=document.createElement('div');sn.className='mn';sn.textContent=isT?(m.catName||'にゃおうさま')+' ✈️':isCat?m.catName||(cats[0]?.name||'ねこ'):m.s;inner.appendChild(sn);}
-    const bub=document.createElement('div');bub.className='bl'+(isT?' bt':isCH?' bch':isCat?' bc':'');
-    if(isMe)bub.style.borderBottomRightRadius='4px';else bub.style.borderBottomLeftRadius='4px';
-    if(isT&&m.spot){bub.innerHTML=`<span style="font-size:26px">${m.spot.e}</span><br><b>${m.spot.n}</b><br><span style="font-size:11px;opacity:.7">${m.spot.l}</span><br><span style="font-size:11px">📸 アルバムに追加されたよ！</span>`;}
-    else if(isCH){
-      const ct=m.ctype;
-      if(ct==='gold')bub.textContent='✨ 金チュールもらったにゃ！3日間成長2倍速！👑';
-      else if(ct==='silver')bub.textContent='🌸 銀チュールもらったにゃ！1日間成長1.5倍速！';
-      else bub.textContent='🐟 チュールもらったにゃ！きぶん+15💕';
+    if(ds!==ld){
+      const div=document.createElement('div');div.className='ds';div.textContent=ds;
+      area.appendChild(div);ld=ds;
     }
-    else{bub.textContent=m.text||'';}
-    const tm=document.createElement('div');tm.className='mt';tm.textContent=d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    // isMe: sender matches myName AND not a system message
+    const isMe = (m.s===myName) && !m.s.startsWith('__');
+    const isT  = m.s==='__T__';
+    const isCH = m.s==='__CH__';
+    const isCat= m.s.startsWith('__');
+
+    const row=document.createElement('div');
+    row.className='mr'+(isMe?' me':'');
+
+    let avEmoji='😄';
+    if(isMe) avEmoji='😊';
+    else if(isCat){
+      const tc=cats.find(c=>c.name===m.catName)||cats[0];
+      avEmoji=tc?stOf(tc).e:'🐱';
+    }
+    const avel=document.createElement('div');avel.className='av';avel.textContent=avEmoji;
+
+    const inner=document.createElement('div');inner.className='mi2';
+    if(isMe) inner.style.alignItems='flex-end';
+
+    if(!isMe){
+      const sn=document.createElement('div');sn.className='mn';
+      if(isT) sn.textContent=(m.catName||'にゃおうさま')+' ✈️';
+      else if(isCat) sn.textContent=m.catName||(cats[0]?.name||'ねこ');
+      else sn.textContent=m.s;
+      inner.appendChild(sn);
+    }
+
+    const bub=document.createElement('div');
+    bub.className='bl'+(isT?' bt':isCH?' bch':isCat?' bc':'');
+    if(isMe) bub.style.borderBottomRightRadius='4px';
+    else bub.style.borderBottomLeftRadius='4px';
+
+    if(isT&&m.spot){
+      bub.innerHTML=`<span style="font-size:26px">${m.spot.e}</span><br><b>${m.spot.n}</b><br><span style="font-size:11px;opacity:.7">${m.spot.l}</span><br><span style="font-size:11px">📸 アルバムに追加されたよ！</span>`;
+    } else if(isCH){
+      const ct=m.ctype;
+      if(ct==='gold') bub.textContent='✨ 金チュールもらったにゃ！3日間成長2倍速！👑';
+      else if(ct==='silver') bub.textContent='🌸 銀チュールもらったにゃ！1日間成長1.5倍速！';
+      else bub.textContent='🐟 チュールもらったにゃ！きぶん+15💕';
+    } else {
+      bub.textContent=m.text||'';
+    }
+
+    const tm=document.createElement('div');tm.className='mt';
+    tm.textContent=d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+
     inner.appendChild(bub);inner.appendChild(tm);
-    if(isMe){row.appendChild(inner);row.appendChild(avel);}else{row.appendChild(avel);row.appendChild(inner);}
+    if(isMe){ row.appendChild(inner);row.appendChild(avel); }
+    else { row.appendChild(avel);row.appendChild(inner); }
     area.appendChild(row);
   }
   area.scrollTop=area.scrollHeight;
