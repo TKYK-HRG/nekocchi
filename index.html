@@ -807,10 +807,19 @@ function updateChuruBtn(){
 
 // ══ STATS ══
 const PW=['好き','大好き','嬉しい','楽しい','幸せ','かわいい','ありがとう','愛','素敵','やったー','最高','笑','💕','❤','😊','😍','🥰'];
-const NW=['嫌い','むかつく','つらい','悲しい','最悪','うざ','😠','😢','😭'];
-function senti(t){let s=0;PW.forEach(w=>{if(t.includes(w))s+=2;});NW.forEach(w=>{if(t.includes(w))s--;});return s;}
+const NW=['嫌い','むかつく','つらい','悲しい','最悪','うざ','バカ','疲れた','シャー','😠','😢','😭'];
+function senti(t,isCatMsg){
+  let s=0;
+  PW.forEach(w=>{if(t.includes(w))s+=2;});
+  // シャーは猫の発言には適用しない
+  NW.forEach(w=>{
+    if(w==='シャー'&&isCatMsg) return;
+    if(t.includes(w))s--;
+  });
+  return s;
+}
 function updStats(text){
-  const sc=senti(text);
+  const sc=senti(text,false);
   const two=window._cachedUsers&&window._cachedUsers.length===2;
   if(two) state.love=Math.min(100,state.love+1+Math.max(0,sc));
   // ネガティブワードでlove-1
@@ -891,7 +900,12 @@ function catCmt(text){
     const speaker=cats.find(c=>text.includes(c.name)&&!c.traveling)||cats[0];
     if(!speaker) return null;
     if(n<0.33) return {cat:speaker, text:r(NYAN)};
-    if(n<0.66) return {cat:speaker, text:r(SHAA)};
+    if(n<0.66){
+      // シャー → happy -5
+      state.happy=Math.max(0,state.happy-5);
+      save();updateHouse();
+      return {cat:speaker, text:r(SHAA)};
+    }
     return null; // 無視
   }
 
@@ -905,7 +919,7 @@ function catCmt(text){
   if(!speaker) return null;
 
   if(isNyao(speaker)){
-    const sc=senti(text),h=new Date().getHours();
+    const sc=senti(text,true),h=new Date().getHours();
     let line;
     if(sc>=3) line=r(NYAO_JP.pos);
     else if(sc<=-1) line=r(NYAO_JP.neg);
