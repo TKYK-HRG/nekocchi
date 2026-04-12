@@ -22,6 +22,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .paw{position:absolute;inset:0;opacity:.04;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='72' height='72'%3E%3Cellipse cx='36' cy='48' rx='12' ry='9' fill='%23663300'/%3E%3Ccircle cx='20' cy='32' r='6' fill='%23663300'/%3E%3Ccircle cx='52' cy='32' r='6' fill='%23663300'/%3E%3Ccircle cx='27' cy='19' r='5' fill='%23663300'/%3E%3Ccircle cx='45' cy='19' r='5' fill='%23663300'/%3E%3C/svg%3E");background-size:72px 72px;}
 .screen{position:fixed;inset:0;z-index:20;display:flex;align-items:center;justify-content:center;flex-direction:column;}
 .screen.hidden{display:none!important;}
+.hidden{display:none!important;}
 /* LOCK */
 #lockScreen{background:linear-gradient(160deg,#FFE8CC,#FFCBA4 55%,#FFB7A3);gap:18px;padding:44px 32px;}
 .li{font-size:76px;animation:fl 3s ease-in-out infinite;filter:drop-shadow(0 8px 20px #00000022);}
@@ -215,7 +216,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 <div class="bg-wrap"><div class="bg-g"></div><div class="paw"></div></div>
 
 <div class="screen" id="lockScreen">
-  <div class="li" id="lockIcon">🐱</div>
+  <div class="li" id="lockIcon"><span id="lockIconInner">🐱</span></div>
   <div class="lt">ねこっちの おうち</div>
   <div class="ls">ふたりだけのひみつの場所🏠<br>お名前をいれてね</div>
   <input class="lin" id="nin" placeholder="あなたのなまえ" maxlength="12" autocomplete="off">
@@ -1378,7 +1379,15 @@ function enterApp(onReady){
     updateHouse();renderMsgs();updateAlbum();updateBadges();checkEvo();checkNeglect();
     // ログイン時に放置分を計算（ただし1時間以内なら不要）
     if(Date.now()-state.lastMsg > 60*60*1000) applyDecay();
-    document.getElementById('lockIcon').textContent=cats[0]?stOf(cats[0]).e:'🐱';
+    // ロック画面アイコンを現在の猫に更新
+    const lockCat=cats[0];
+    const lockSt=lockCat?stOf(lockCat):null;
+    const lockEl=document.getElementById('lockIconInner');
+    if(lockSt?.img&&lockEl){
+      lockEl.innerHTML=`<img src="${lockSt.img}" style="width:76px;height:76px;border-radius:50%;object-fit:cover;border:3px solid #FFFFFF80;box-shadow:0 8px 24px #00000030;">`;
+    } else if(lockEl){
+      lockEl.textContent=lockSt?lockSt.e:'🐱';
+    }
     if(onReady){ onReady(); }
     else {
       const g=['にゃ！きてくれた！🐾','おかえり！まってたにゃ💕','こんにちは！なでて🐱'];
