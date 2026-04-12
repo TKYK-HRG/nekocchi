@@ -692,7 +692,7 @@ function checkNeglect(){
 }
 
 // ══ CHURU ══
-function churuOK(){return state.lastChuru!==todayKey();}
+function churuOK(){return state.lastChuru!==todayKey()&&!state.churuLocked;}
 function rollChuruType(){const n=Math.random();if(n<0.10)return'gold';if(n<0.30)return'silver';return'normal';}
 
 function giveChuru(){
@@ -713,7 +713,7 @@ function giveChuru(){
     knownMsgKeys.add(m.ts+'_'+m.s);
     msgs.push(m);pushMsg(m);
     confetti();confetti();
-    catType(cn+'「にゃ！！！きんいろのチュールだにゃ！！うれしすぎるにゃ！！✨👑✨」',400,cn);
+    catType(cn+'「ニャムニャムニャムニャム♥♥♥✨👑✨」',400,cn);
   }else if(type==='silver'){
     const boost={type:'silver',until:Date.now()+1*DMS};
     setBoost(boost);window._lastBoost=boost;
@@ -722,12 +722,12 @@ function giveChuru(){
     knownMsgKeys.add(m.ts+'_'+m.s);
     msgs.push(m);pushMsg(m);
     confetti();
-    catType(cn+'「ぎんいろのチュールだにゃ！！きょうはとくべつだにゃ！🌸」',400,cn);
+    catType(cn+'「ジョリジョリジョリジョリ…🌸」',400,cn);
   }else{
     const m={s:'__CH__',catName:cn,ctype:'normal',ts:Date.now()};
     knownMsgKeys.add(m.ts+'_'+m.s);
     msgs.push(m);pushMsg(m);
-    const cm=['にゃーん！チュールだにゃ！😻','チュールチュール！だいすきにゃ！💕','にゃ！！！うれしいにゃ！！🎉'];
+    const cm=['ジョリジョリジョリジョリ…','ニャムニャムニャムニャム♥'];
     catType(cn+'「'+r(cm)+'」',400,cn);
   }
   saveState();renderMsgs();updateHouse();updateChuruBtn();
@@ -746,6 +746,9 @@ function updateChuruBtn(){
   if(churuOK()){
     btn.disabled=false;btn.className='chb';btn.textContent='🐟 チュールをあげる';
     st.textContent='きょうのぶん、まだあるよ！（金・銀チュールが出るかも？）';st.style.color='var(--mocha)';
+  }else if(state.churuLocked){
+    btn.disabled=true;btn.className='chb';
+    st.textContent='仲良し度が90%を下回るまでロック中にゃ🔒';st.style.color='#AAA';
   }else{
     btn.disabled=true;btn.className='chb';
     const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
@@ -764,12 +767,17 @@ function updStats(text){
   state.happy=Math.min(100,Math.max(10,state.happy+sc+(text.length>10?1:0)));
   state.msgCount++;state.lastMsg=Date.now();
 
-  // 仲良し度100%達成でチュールリセット（もう一度あげられる）
-  if(state.love>=100&&state.lastChuru===todayKey()){
+  // 仲良し度100%達成でチュールリセット（love90%未満になるまでロック）
+  if(state.love>=100&&state.lastChuru===todayKey()&&!state.churuLocked){
+    state.churuLocked=true;
     state.lastChuru='';
     notify('🎉 仲良し度MAX！チュールがリセットされたにゃ！もう一回あげられるよ🐟');
     const nyao=cats.find(c=>isNyao(c));
     if(nyao) catType(nyao.name+'「ふたりの仲の良さが天井知らずじゃ！チュールをもう一度受け取るのじゃ🐟👑」',600,nyao.name);
+  }
+  // love90%未満になったらロック解除
+  if(state.churuLocked&&state.love<90){
+    state.churuLocked=false;
   }
 
   save();updateHouse();
