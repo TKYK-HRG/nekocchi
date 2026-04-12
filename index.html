@@ -877,6 +877,7 @@ function applyBoostTick(){
 // ══ CAT SPEECH ══
 const NYAN=['にゃ','にゃにゃ','にゃ～','ニャ！','ごろごろ','ふにゃ','みゃ','にゃーん','ごろごろ…','にゃ？','みゃあ','にゃっ！','ぷにゃ','にゃにゃにゃ'];
 const SHAA=['シャー！','シャーッ！','ふしゃー！','シャ！'];
+const WUU=['ウー…','ウーッ…','ぅぅぅ…','ウゥ…'];
 const NYAO_JP={
   pos:['ふたりのなかよしパワー、わらわにも届くのじゃ💕','うむ、よい会話じゃ😸','わらわも幸せな気分じゃ🌸','きゅんとするのじゃ💖'],
   neg:['どうしたのじゃ？😿','わらわがそばにおるぞ🤗','つらいときは話すのじゃ💭'],
@@ -894,19 +895,24 @@ function containsCatName(text){
 }
 
 function catCmt(text){
-  // 名前を呼ばれた場合：33%でニャ、33%でシャー、33%で無視
   if(containsCatName(text)){
     const n=Math.random();
     const speaker=cats.find(c=>text.includes(c.name)&&!c.traveling)||cats[0];
     if(!speaker) return null;
-    if(n<0.33) return {cat:speaker, text:r(NYAN)};
-    if(n<0.66){
-      // シャー → happy -5
+    if(n<0.40) return {cat:speaker, text:r(NYAN)};  // 40%：にゃ
+    if(n<0.60){
+      // 20%：シャー → happy -5、love -7
       state.happy=Math.max(0,state.happy-5);
+      state.love=Math.max(0,state.love-7);
       save();updateHouse();
       return {cat:speaker, text:r(SHAA)};
     }
-    return null; // 無視
+    if(n<0.90) return null; // 30%：無視
+    // 10%：ウー → love -10、happy -10
+    state.love=Math.max(0,state.love-10);
+    state.happy=Math.max(0,state.happy-10);
+    save();updateHouse();
+    return {cat:speaker, text:r(WUU)};
   }
 
   // 通常：6回に1回
