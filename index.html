@@ -92,7 +92,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .cc{background:#FFFFFF88;border:2px solid #FFE0C8;border-radius:16px;padding:12px;display:flex;flex-direction:column;align-items:center;gap:3px;min-width:96px;flex:1;cursor:pointer;transition:transform .15s,border-color .15s;position:relative;}
 .cc:hover{transform:translateY(-3px);border-color:var(--accent);}
 .cc .ce{font-size:44px;line-height:1;filter:drop-shadow(0 3px 8px #00000015);}
-.cc .ce-img{width:60px;height:60px;border-radius:50%;object-fit:cover;border:2.5px solid #FFE0C8;box-shadow:0 3px 10px #00000020;}
+.cc .ce-img{width:80px;height:80px;border-radius:50%;object-fit:cover;border:2.5px solid #FFE0C8;box-shadow:0 3px 10px #00000020;}
 .cc .cn{font-size:12px;font-weight:700;color:var(--dark);}
 .cc .cs{font-size:10px;color:var(--mocha);}
 .cc .ca{font-size:10px;color:#AAA;}
@@ -192,6 +192,23 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 @keyframes sd{from{transform:translateX(-50%) translateY(-100%)}to{transform:translateX(-50%) translateY(0)}}
 @keyframes cp{0%{transform:scale(1)}30%{transform:scale(1.3) rotate(-10deg)}60%{transform:scale(.9) rotate(5deg)}100%{transform:scale(1)}}
 .chura{animation:cp .5s ease;}
+/* NEKOJARASHI GAME */
+#nekoGame{position:fixed;inset:0;z-index:50;background:linear-gradient(160deg,#FFF8F0,#FFE8CC);display:none;flex-direction:column;align-items:center;overflow:hidden;}
+#nekoGame.show{display:flex;}
+.ng-header{width:100%;padding:16px 20px 10px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.ng-title{font-size:16px;font-weight:900;color:var(--dark);}
+.ng-timer{font-size:32px;font-weight:900;color:var(--accent);min-width:44px;text-align:center;}
+.ng-arena{flex:1;width:100%;position:relative;overflow:hidden;background:radial-gradient(ellipse at 50% 40%,#FFE8CC,#FFD4B8);}
+.ng-player{position:absolute;font-size:44px;user-select:none;pointer-events:none;filter:drop-shadow(0 4px 8px #00000020);transition:left .08s,top .08s;}
+.ng-hand{position:absolute;font-size:52px;user-select:none;pointer-events:none;filter:drop-shadow(0 4px 8px #00000030);transition:left .25s ease,top .25s ease;}
+.ng-result{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#FFFFFFCC;backdrop-filter:blur(4px);}
+.ng-result-icon{font-size:64px;}
+.ng-result-msg{font-size:20px;font-weight:900;color:var(--dark);}
+.ng-result-sub{font-size:13px;color:var(--mocha);text-align:center;line-height:1.8;}
+.ng-result-btn{padding:12px 32px;border-radius:999px;background:var(--accent);color:#fff;border:none;font-family:inherit;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px #FF8C6940;margin-top:8px;}
+.ng-hint{font-size:12px;color:var(--mocha);text-align:center;padding:6px 20px;flex-shrink:0;}
+.jarashi-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:999px;background:linear-gradient(135deg,#A0D8A0,#7EC8A4);color:#fff;border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px #7EC8A440;transition:transform .15s,opacity .2s;margin-left:6px;}
+.jarashi-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
 </style>
 </head>
 <body>
@@ -246,6 +263,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
       <div class="chw">
         <button class="chb" id="chb">🐟 チュールをあげる</button>
         <div class="chs" id="chs">きょうのぶん、まだあるよ！</div>
+        <button class="jarashi-btn" id="jarashiBtn">🎋 あそぶ</button>
       </div>
       <div id="boostBanner" style="display:none"></div>
       <div class="cg" id="cg"></div>
@@ -309,7 +327,24 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
     </div>
   </div>
 </div>
-<div id="tooltip" class="tt" style="display:none"></div>
+<!-- NEKOJARASHI GAME -->
+<div id="nekoGame">
+  <div class="ng-header">
+    <div class="ng-title">🎋 猫じゃらしから逃げろ！</div>
+    <div class="ng-timer" id="ngTimer">10</div>
+  </div>
+  <div class="ng-hint">画面をタップして逃げるにゃ！🐾</div>
+  <div class="ng-arena" id="ngArena">
+    <div class="ng-player" id="ngPlayer">🐭</div>
+    <div class="ng-hand" id="ngHand">🐾</div>
+    <div class="ng-result" id="ngResult" style="display:none;">
+      <div class="ng-result-icon" id="ngResultIcon"></div>
+      <div class="ng-result-msg" id="ngResultMsg"></div>
+      <div class="ng-result-sub" id="ngResultSub"></div>
+      <button class="ng-result-btn" id="ngResultBtn">とじる</button>
+    </div>
+  </div>
+</div>
 
 <script>
 // ══ WORLD HERITAGE ══
@@ -552,7 +587,6 @@ function startRealtimeSync(){
   // ── State ──
   REF.child('state').on('value',snap=>{
     if(!dbReady||!snap.val())return;
-    // 自分がsaveしてから2秒以内はlove/happyを上書きしない
     if(Date.now()-lastStateSaveTs<2000) return;
     const ns=snap.val();
     state.love=ns.love??state.love;
@@ -561,7 +595,10 @@ function startRealtimeSync(){
     state.lastEgg20=ns.lastEgg20??state.lastEgg20;
     state.lastChuru=ns.lastChuru??state.lastChuru;
     state.churuLocked=ns.churuLocked??state.churuLocked;
+    state.jarashiPlayed=ns.jarashiPlayed??state.jarashiPlayed;
+    state.lastMsg=ns.lastMsg??state.lastMsg;
     if(curTab==='H') updateHouse();
+    else checkNeglect(); // タブに関わらず警告を更新
   });
   // saveState時にタイムスタンプを記録
   const _origSaveState=saveState;
@@ -749,6 +786,8 @@ function applyDecay(){
   }
 
   if(changed){ save(); updateHouse(); }
+  // 警告表示は常に最新のhappyで判定
+  checkNeglect();
 }
 
 // ══ CHURU ══
@@ -815,6 +854,7 @@ function updateChuruBtn(){
     const diff=next-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);
     st.textContent='つぎは '+h+'時間'+m+'分後にゃ';st.style.color='#AAA';
   }
+  updateJarashiBtn();
 }
 
 // ══ STATS ══
@@ -833,17 +873,22 @@ function senti(t,isCatMsg){
 function updStats(text){
   const sc=senti(text,false);
   const two=window._cachedUsers&&window._cachedUsers.length===2;
-  if(two) state.love=Math.min(100,state.love+1+Math.max(0,sc));
-  // ネガティブワードでlove-1
-  if(sc<0) state.love=Math.max(0,state.love-1);
+  if(two){
+    if(sc>=0){
+      // ポジティブ or 普通：+1〜+3
+      state.love=Math.min(100,state.love+1+sc);
+    } else {
+      // ネガティブワード：-1
+      state.love=Math.max(0,state.love-1);
+    }
+  }
   state.happy=Math.min(100,Math.max(0,state.happy+sc+(text.length>10?1:0)));
   state.msgCount++;
   state.lastMsg=Date.now();
-  // チャットしたので減衰フラグリセット
   state.decayDay1Applied=false;
   state.lastHappyDecayDay=0;
 
-  // 仲良し度100%達成でチュールリセット（love90%未満になるまでロック）
+  // 仲良し度100%達成でチュールリセット
   if(state.love>=100&&state.lastChuru===todayKey()&&!state.churuLocked){
     state.churuLocked=true;
     state.lastChuru='';
@@ -854,6 +899,7 @@ function updStats(text){
   // love90%未満になったらロック解除
   if(state.churuLocked&&state.love<90){
     state.churuLocked=false;
+    state.jarashiPlayed=false; // 次のロック時にまた遊べる
   }
 
   save();updateHouse();
@@ -890,6 +936,17 @@ function applyBoostTick(){
 const NYAN=['にゃ','にゃにゃ','にゃ～','ニャ！','ごろごろ','ふにゃ','みゃ','にゃーん','ごろごろ…','にゃ？','みゃあ','にゃっ！','ぷにゃ','にゃにゃにゃ'];
 const SHAA=['シャー！','シャーッ！','ふしゃー！','シャ！'];
 const WUU=['ウー…','ウーッ…','ぅぅぅ…','ウゥ…'];
+const KOROKORO=[
+  'ごろごろごろごろ🐾💕','ごろごろごろごろごろごろ！！🐾','ごろ…ごろ…ごろごろごろ！🐾',
+  'ごろごろごろ…ごろごろごろ…💕💕','にゃ！ごろごろごろごろ！🐾✨',
+  'ごろごろごろごろごろごろごろ🐾🐾🐾'
+];
+const PRAISE_WORDS=['かわいい','可愛い','かわええ','ステキ','素敵','いい子','よい子','よく','えらい','上手','じょうず','かしこい','賢い','きれい','綺麗','かっこいい','格好いい','天才','最高','すごい','凄い'];
+
+function containsPraise(text){
+  return PRAISE_WORDS.some(w=>text.includes(w));
+}
+let shaaTs=0; // 最後にシャーした時刻
 const NYAO_JP={
   pos:['ふたりのなかよしパワー、わらわにも届くのじゃ💕','うむ、よい会話じゃ😸','わらわも幸せな気分じゃ🌸','きゅんとするのじゃ💖'],
   neg:['どうしたのじゃ？😿','わらわがそばにおるぞ🤗','つらいときは話すのじゃ💭'],
@@ -906,21 +963,63 @@ function containsCatName(text){
   return cats.some(c=>text.includes(c.name));
 }
 
+let praiseCount=0; // 褒め言葉カウンター
+
 function catCmt(text){
+  // 褒め言葉 → 3回カウントでころころ発動
+  if(containsPraise(text)){
+    praiseCount++;
+    if(praiseCount>=3){
+      praiseCount=0;
+      const speaker=cats.find(c=>!c.traveling)||cats[0];
+      if(speaker){
+        state.happy=Math.min(100,state.happy+3);
+        save();updateHouse();
+        setTimeout(()=>catType(r(KOROKORO),1400,speaker.name),0);
+        setTimeout(()=>catType(r(KOROKORO),2900,speaker.name),0);
+        return {cat:speaker, text:r(KOROKORO)};
+      }
+    }
+    return null; // 1〜2回目は反応しない
+  }
+
   if(containsCatName(text)){
     const n=Math.random();
     const speaker=cats.find(c=>text.includes(c.name)&&!c.traveling)||cats[0];
     if(!speaker) return null;
-    if(n<0.40) return {cat:speaker, text:r(NYAN)};  // 40%：にゃ
-    if(n<0.60){
-      // 20%：シャー → happy -5、love -7
+
+    // シャー後10秒以内はウー確率60%
+    const shaaRecent=(Date.now()-shaaTs)<10000;
+
+    if(shaaRecent){
+      // 60%：ウー、20%：シャー、20%：にゃ
+      if(n<0.60){
+        state.love=Math.max(0,state.love-10);
+        state.happy=Math.max(0,state.happy-10);
+        save();updateHouse();
+        return {cat:speaker, text:r(WUU)};
+      }
+      if(n<0.80){
+        state.happy=Math.max(0,state.happy-5);
+        state.love=Math.max(0,state.love-7);
+        shaaTs=Date.now();
+        save();updateHouse();
+        return {cat:speaker, text:r(SHAA)};
+      }
+      return {cat:speaker, text:r(NYAN)};
+    }
+
+    // 通常時：55%にゃ、20%シャー、20%無視、5%ウー
+    if(n<0.55) return {cat:speaker, text:r(NYAN)};
+    if(n<0.75){
       state.happy=Math.max(0,state.happy-5);
       state.love=Math.max(0,state.love-7);
+      shaaTs=Date.now();
       save();updateHouse();
       return {cat:speaker, text:r(SHAA)};
     }
-    if(n<0.90) return null; // 30%：無視
-    // 10%：ウー → love -10、happy -10
+    if(n<0.95) return null; // 20%：無視
+    // 5%：ウー
     state.love=Math.max(0,state.love-10);
     state.happy=Math.max(0,state.happy-10);
     save();updateHouse();
@@ -1300,7 +1399,134 @@ function enterApp(onReady){
     setInterval(()=>{applyDecay();checkNeglect();},60*60*1000); // 1時間ごと
   });
 }
-document.getElementById('enterBtn').addEventListener('click',tryEnter);
+// ══ NEKOJARASHI GAME ══
+// 1人1回：チュールがロックされた時に1回だけ遊べる（Firebaseで管理）
+function jarashiCanPlay(){
+  return state.churuLocked && !state.jarashiPlayed;
+}
+function jarashiSetPlayed(){
+  state.jarashiPlayed=true;
+  save();
+}
+// churuLockedがfalseになったらjarashiPlayedもリセット（次のロック時に遊べる）
+
+let ngRunning=false,ngTimer=null,ngHandTimer=null,ngSec=10;
+let ngPX=50,ngPY=50; // player position %
+let ngHX=10,ngHY=10; // hand position %
+const SPEED=8; // player move step %
+
+function updateJarashiBtn(){
+  const btn=document.getElementById('jarashiBtn');
+  if(!btn)return;
+  if(!state.churuLocked){
+    btn.style.display='none';
+  } else if(state.jarashiPlayed){
+    btn.style.display='';btn.disabled=true;
+    btn.textContent='🎋 もう遊んだにゃ';
+  } else {
+    btn.style.display='';btn.disabled=false;
+    btn.textContent='🎋 逃げきれ！チュール復活';
+  }
+}
+
+function startNekoGame(){
+  if(!jarashiCanPlay()){
+    if(!state.churuLocked) notify('チュールがロック中の時だけ遊べるにゃ🎋');
+    else notify('もう遊んだにゃ！次のロックまで待ってにゃ🎋');
+    return;
+  }
+  ngRunning=true;ngSec=10;ngPX=50;ngPY=50;ngHX=10;ngHY=10;
+  const game=document.getElementById('nekoGame');
+  const result=document.getElementById('ngResult');
+  result.style.display='none';
+  game.classList.add('show');
+  positionEl('ngPlayer',ngPX,ngPY);
+  positionEl('ngHand',ngHX,ngHY);
+  document.getElementById('ngTimer').textContent=ngSec;
+
+  // Countdown
+  ngTimer=setInterval(()=>{
+    if(!ngRunning)return;
+    ngSec--;
+    document.getElementById('ngTimer').textContent=ngSec;
+    if(ngSec<=0){ endNekoGame(true); }
+  },1000);
+
+  // Hand chases player
+  ngHandTimer=setInterval(()=>{
+    if(!ngRunning)return;
+    // Move hand toward player with some randomness
+    const dx=ngPX-ngHX, dy=ngPY-ngHY;
+    const dist=Math.sqrt(dx*dx+dy*dy);
+    const spd=DEMO?8:3.5;
+    if(dist>1){
+      ngHX+=((dx/dist)*spd)+(Math.random()-0.5)*3;
+      ngHY+=((dy/dist)*spd)+(Math.random()-0.5)*3;
+    }
+    ngHX=Math.max(0,Math.min(90,ngHX));
+    ngHY=Math.max(0,Math.min(88,ngHY));
+    positionEl('ngHand',ngHX,ngHY);
+    // Caught check
+    if(dist<10) endNekoGame(false);
+  },120);
+}
+
+function positionEl(id,px,py){
+  const el=document.getElementById(id);
+  if(!el)return;
+  el.style.left=px+'%';el.style.top=py+'%';
+}
+
+function endNekoGame(escaped){
+  ngRunning=false;
+  clearInterval(ngTimer);clearInterval(ngHandTimer);
+  jarashiSetPlayed();
+  updateJarashiBtn();
+  const result=document.getElementById('ngResult');
+  result.style.display='flex';
+  if(escaped){
+    document.getElementById('ngResultIcon').textContent='🎉';
+    document.getElementById('ngResultMsg').textContent='逃げ切った！';
+    document.getElementById('ngResultSub').textContent='チュールが復活したにゃ🐟\nよく逃げたにゃ！';
+    // チュールリセット
+    state.lastChuru='';state.churuLocked=false;
+    save();updateChuruBtn();
+    confetti();
+  } else {
+    document.getElementById('ngResultIcon').textContent='😹';
+    document.getElementById('ngResultMsg').textContent='つかまえた！';
+    document.getElementById('ngResultSub').textContent='猫じゃらしに負けたにゃ…\nまた明日チャレンジするにゃ🎋';
+  }
+}
+
+// Touch/click to move player
+document.getElementById('ngArena').addEventListener('touchstart',e=>{
+  if(!ngRunning)return;
+  e.preventDefault();
+  const touch=e.touches[0];
+  const arena=document.getElementById('ngArena').getBoundingClientRect();
+  ngPX=((touch.clientX-arena.left)/arena.width)*100;
+  ngPY=((touch.clientY-arena.top)/arena.height)*100;
+  ngPX=Math.max(0,Math.min(90,ngPX));
+  ngPY=Math.max(0,Math.min(88,ngPY));
+  positionEl('ngPlayer',ngPX,ngPY);
+},{passive:false});
+
+document.getElementById('ngArena').addEventListener('click',e=>{
+  if(!ngRunning)return;
+  const arena=document.getElementById('ngArena').getBoundingClientRect();
+  ngPX=((e.clientX-arena.left)/arena.width)*100;
+  ngPY=((e.clientY-arena.top)/arena.height)*100;
+  ngPX=Math.max(0,Math.min(90,ngPX));
+  ngPY=Math.max(0,Math.min(88,ngPY));
+  positionEl('ngPlayer',ngPX,ngPY);
+});
+
+document.getElementById('ngResultBtn').addEventListener('click',()=>{
+  document.getElementById('nekoGame').classList.remove('show');
+  updateHouse();
+});
+document.getElementById('jarashiBtn').addEventListener('click',startNekoGame);
 document.getElementById('nin').addEventListener('keydown',e=>{if(e.key==='Enter')tryEnter();});
 
 // ══ RENAME ══
