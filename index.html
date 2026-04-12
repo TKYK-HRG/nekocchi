@@ -52,7 +52,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .ti{font-size:18px;display:block;margin-bottom:1px;}
 .tbadge{display:inline-block;background:#FF4444;color:#fff;font-size:9px;font-weight:900;border-radius:999px;padding:1px 5px;margin-left:2px;vertical-align:top;margin-top:-1px;}
 /* PANELS */
-.panel{flex:1;display:none;flex-direction:column;min-height:0;overflow:hidden;}
+.panel{flex:1;display:none;flex-direction:column;min-height:0;}
 .panel.active{display:flex;}
 /* HOUSE */
 #pH{overflow-y:auto;background:var(--cream);}
@@ -100,7 +100,29 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .nw{margin:0 14px 10px;padding:9px 13px;border-radius:12px;background:#FFF0E0;border:1.5px solid #FFAA80;font-size:12px;color:#CC4400;line-height:1.6;}
 .hi{margin:0 14px 12px;padding:10px 13px;border-radius:12px;background:#FFFFFF80;border:1px solid #FFE0C8;font-size:12px;color:var(--mocha);line-height:1.8;white-space:pre-wrap;}
 /* CHAT */
-#pC{background:var(--cream);}
+#pC{background:var(--cream);overflow:hidden;}
+/* CHAT HEADER - online status */
+.chat-header{
+  padding:10px 16px 8px;
+  background:#FFF5EE;
+  border-bottom:1.5px solid #FFE0C8;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-shrink:0;
+  transition:background .6s ease;
+}
+.chat-header.online{
+  background:linear-gradient(135deg,#FFD4B8,#FFB7A3);
+  animation:headerPulse 2.5s ease-in-out infinite;
+}
+@keyframes headerPulse{0%,100%{background:linear-gradient(135deg,#FFD4B8,#FFB7A3)}50%{background:linear-gradient(135deg,#FFB7A3,#FF9E8A)}}
+.chat-header-name{font-size:13px;font-weight:700;color:var(--dark);}
+.chat-header-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mocha);}
+.online-dot{
+  width:8px;height:8px;border-radius:50%;background:#CCC;
+  transition:background .4s;flex-shrink:0;
+}
+.online-dot.on{background:#5CDB95;box-shadow:0 0 6px #5CDB9580;animation:dotPulse 1.5s ease-in-out infinite;}
+@keyframes dotPulse{0%,100%{box-shadow:0 0 4px #5CDB9560}50%{box-shadow:0 0 10px #5CDB95CC}}
 .cs{flex:1;overflow-y:auto;padding:12px 12px 6px;display:flex;flex-direction:column;gap:7px;min-height:0;}
 .cs::-webkit-scrollbar{width:3px;}
 .cs::-webkit-scrollbar-thumb{background:#FFD4B8;border-radius:2px;}
@@ -214,6 +236,13 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
     </div>
     <!-- CHAT -->
     <div class="panel" id="pC">
+      <div class="chat-header" id="chatHeader">
+        <div class="chat-header-name" id="chatHeaderName">チャット</div>
+        <div class="chat-header-status">
+          <div class="online-dot" id="onlineDot"></div>
+          <span id="onlineStatus">—</span>
+        </div>
+      </div>
       <div class="cs" id="cs"></div>
       <div class="ib">
         <textarea class="ci" id="ci" placeholder="メッセージを送ろう🐾" rows="1"></textarea>
@@ -312,78 +341,158 @@ firebase.initializeApp(firebaseConfig);
 const db=firebase.database();
 const REF=db.ref('nekotchi');
 
-// ══ FIREBASE STORAGE (replaces localStorage) ══
+// ══ FIREBASE STORAGE ══
 const r=a=>a[Math.floor(Math.random()*a.length)];
 const todayKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
 const monthKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1);};
-
-let isSaving=false; // kept for compatibility but no longer used
 
 // Read all data once from Firebase
 function load(cb){
   REF.once('value',snap=>{
     const d=snap.val()||{};
     state=d.state||{love:0,happy:50,msgCount:0,lastMsg:Date.now(),lastEgg:'',lastEgg20:'',lastChuru:'',petCount:0};
-    msgs=d.msgs?Object.values(d.msgs).sort((a,b)=>a.ts-b.ts):[];
+    // Load existing messages
+    const rawMsgs=d.msgs?Object.values(d.msgs):[];
+    msgs=rawMsgs.sort((a,b)=>a.ts-b.ts);
     cats=d.cats?Object.values(d.cats):[];
     album=d.album?Object.values(d.album):[];
     dbReady=true;
     if(!cats.length){
-      // First time: spawn cat then callback
       const name=CNAMES[0];
       cats.push({id:Date.now(),name,born:Date.now(),si:0,traveling:false});
-      save();
+      saveState();
     }
     if(cb)cb();
   });
 }
 
-function save(){
+// Save state/cats/album only (messages use push)
+function saveState(){
   if(!dbReady)return;
-  const mObj={},cObj={},aObj={};
-  msgs.slice(-500).forEach((m,i)=>mObj[i]=m);
+  const cObj={},aObj={};
   cats.forEach((c,i)=>cObj[i]=c);
   album.forEach((a,i)=>aObj[i]=a);
-  REF.set({state,msgs:mObj,cats:cObj,album:aObj});
+  REF.child('state').set(state);
+  REF.child('cats').set(cObj);
+  REF.child('album').set(aObj);
 }
 
-// Users stored separately for access control
+// Push one message to Firebase
+function pushMsg(m){
+  if(!dbReady)return;
+  REF.child('msgs').push(m);
+}
+
+// Alias
+function save(){ saveState(); }
+
+// Users
 function gu(cb){
   db.ref('nekotchi_users').once('value',snap=>cb(snap.val()||[]));
 }
 function su(u){db.ref('nekotchi_users').set(u);}
 
-// Realtime listener: only update when OTHER user changes data
+// ══ ONLINE PRESENCE ══
+const ONLINE_REF=db.ref('nekotchi_online');
+const ONLINE_INTERVAL=20000; // heartbeat every 20sec
+const ONLINE_TIMEOUT=45000;  // offline if no heartbeat for 45sec
+let onlineTimer=null;
+
+function startPresence(){
+  function heartbeat(){
+    ONLINE_REF.child(myName.replace(/[.#$[\]]/g,'_')).set(Date.now());
+  }
+  heartbeat();
+  if(onlineTimer) clearInterval(onlineTimer);
+  onlineTimer=setInterval(heartbeat, ONLINE_INTERVAL);
+  ONLINE_REF.child(myName.replace(/[.#$[\]]/g,'_')).onDisconnect().remove();
+  ONLINE_REF.on('value', snap=>{
+    const data=snap.val()||{};
+    const users=window._cachedUsers||[];
+    const other=users.find(u=>u!==myName);
+    if(!other)return;
+    const key=other.replace(/[.#$[\]]/g,'_');
+    const ts=data[key]||0;
+    const isOnline=ts>0&&(Date.now()-ts)<ONLINE_TIMEOUT;
+    updateOnlineUI(other, isOnline);
+  });
+}
+
+function updateOnlineUI(otherName, isOnline){
+  const header=document.getElementById('chatHeader');
+  const dot=document.getElementById('onlineDot');
+  const status=document.getElementById('onlineStatus');
+  const nameEl=document.getElementById('chatHeaderName');
+  if(!header)return;
+  nameEl.textContent=otherName||'チャット';
+  if(isOnline){
+    header.classList.add('online');
+    dot.classList.add('on');
+    status.textContent='オンライン';
+    status.style.color='#2E8B57';
+  } else {
+    header.classList.remove('online');
+    dot.classList.remove('on');
+    status.textContent='オフライン';
+    status.style.color='#AAA';
+  }
+}
+
+// ══ REALTIME SYNC ══
+// Track Firebase msg keys we already have to avoid duplicates
+const knownMsgKeys=new Set();
+
 function startRealtimeSync(){
-  REF.on('value',snap=>{
-    const d=snap.val();
-    if(!d||!dbReady)return;
-    const newMsgs=d.msgs?Object.values(d.msgs).sort((a,b)=>a.ts-b.ts):[];
-    // Only update messages if there are MORE than we have locally
-    // (our own saves already rendered locally, so skip same-count updates)
-    if(newMsgs.length>msgs.length){
-      // Add only the new messages we don't have yet
-      const lastTs=msgs.length>0?msgs[msgs.length-1].ts:0;
-      const incoming=newMsgs.filter(m=>m.ts>lastTs&&m.s!==myName);
-      if(incoming.length>0){
-        msgs=newMsgs;
-        if(curTab==='C')renderMsgs();
-        else{chatU+=incoming.length;updateBadges();}
-      }
-    }
-    const newCats=d.cats?Object.values(d.cats):[];
-    if(JSON.stringify(newCats)!==JSON.stringify(cats)){
-      cats=newCats;
+  // IMPORTANT: register all loaded msgs BEFORE attaching listener
+  msgs.forEach(m=>knownMsgKeys.add(m.ts+'_'+m.s));
+
+  // child_added fires for ALL existing children first, then new ones
+  // knownMsgKeys blocks the existing ones, only new ones get through
+  REF.child('msgs').on('child_added',snap=>{
+    if(!dbReady)return;
+    const m=snap.val();
+    if(!m||!m.ts)return;
+    const key=m.ts+'_'+m.s;
+    if(knownMsgKeys.has(key))return;
+    knownMsgKeys.add(key);
+    msgs.push(m);
+    msgs.sort((a,b)=>a.ts-b.ts);
+    if(curTab==='C') renderMsgs();
+    else{ chatU++; updateBadges(); }
+  });
+
+  // Cats - only update if genuinely different
+  REF.child('cats').on('value',snap=>{
+    if(!dbReady||!snap.val())return;
+    const nc=Object.values(snap.val());
+    if(JSON.stringify(nc)!==JSON.stringify(cats)){
+      cats=nc;
       if(curTab==='H')renderCats();
     }
-    const newAlbum=d.album?Object.values(d.album):[];
-    if(newAlbum.length>album.length){
-      album=newAlbum;
+  });
+
+  // Album
+  REF.child('album').on('value',snap=>{
+    if(!dbReady||!snap.val())return;
+    const na=Object.values(snap.val());
+    if(na.length>album.length){
+      const diff=na.length-album.length;
+      album=na;
       if(curTab==='A')updateAlbum();
-      else{albumU+=(newAlbum.length-album.length);updateBadges();}
+      else{albumU+=diff;updateBadges();}
     }
-    if(d.state) state=d.state;
-    if(curTab==='H')updateHouse();
+  });
+
+  // State - skip checkNeglect here to avoid triggering on every remote update
+  REF.child('state').on('value',snap=>{
+    if(!dbReady||!snap.val())return;
+    const ns=snap.val();
+    // Only update fields we don't own (avoid overwriting local love/happy mid-session)
+    state.love=ns.love??state.love;
+    state.happy=ns.happy??state.happy;
+    state.lastEgg=ns.lastEgg??state.lastEgg;
+    state.lastEgg20=ns.lastEgg20??state.lastEgg20;
+    if(curTab==='H') updateHouse();
   });
 }
 
@@ -457,8 +566,12 @@ function doTravel(id){
   if(!rem.length){checkClear();return;}
   const spot=rem[Math.floor(Math.random()*rem.length)];
   album.push({sid:spot.i,cat:cat.name,ts:Date.now()});
-  msgs.push({s:'__T__',catName:cat.name,spot,ts:Date.now()});
-  save();renderMsgs();
+  const tMsg={s:'__T__',catName:cat.name,spot,ts:Date.now()};
+  knownMsgKeys.add(tMsg.ts+'_'+tMsg.s);
+  msgs.push(tMsg);
+  pushMsg(tMsg);
+  saveState();
+  renderMsgs();
   if(curTab!=='C'){chatU++;updateBadges();}
   if(curTab!=='A'){albumU++;updateBadges();}
   updateAlbum();
@@ -525,7 +638,6 @@ function giveChuru(){
   state.lastChuru=todayKey();
   state.happy=Math.min(100,state.happy+15);
   state.love=Math.min(100,state.love+5);
-  save();
   const btn=document.getElementById('chb');
   btn.classList.add('chura');setTimeout(()=>btn.classList.remove('chura'),500);
   const cat=cats.find(c=>!c.traveling)||cats[0];
@@ -534,22 +646,28 @@ function giveChuru(){
     const boost={type:'gold',until:Date.now()+3*DMS};
     setBoost(boost);window._lastBoost=boost;
     notify('✨ 金チュール！ 3日間成長2倍速！');
-    msgs.push({s:'__CH__',catName:cn,ctype:'gold',ts:Date.now()});
+    const m={s:'__CH__',catName:cn,ctype:'gold',ts:Date.now()};
+    knownMsgKeys.add(m.ts+'_'+m.s);
+    msgs.push(m);pushMsg(m);
     confetti();confetti();
     catType(cn+'「にゃ！！！きんいろのチュールだにゃ！！うれしすぎるにゃ！！✨👑✨」',400,cn);
   }else if(type==='silver'){
     const boost={type:'silver',until:Date.now()+1*DMS};
     setBoost(boost);window._lastBoost=boost;
     notify('🌸 銀チュール！ 1日間成長1.5倍速！');
-    msgs.push({s:'__CH__',catName:cn,ctype:'silver',ts:Date.now()});
+    const m={s:'__CH__',catName:cn,ctype:'silver',ts:Date.now()};
+    knownMsgKeys.add(m.ts+'_'+m.s);
+    msgs.push(m);pushMsg(m);
     confetti();
     catType(cn+'「ぎんいろのチュールだにゃ！！きょうはとくべつだにゃ！🌸」',400,cn);
   }else{
-    msgs.push({s:'__CH__',catName:cn,ctype:'normal',ts:Date.now()});
+    const m={s:'__CH__',catName:cn,ctype:'normal',ts:Date.now()};
+    knownMsgKeys.add(m.ts+'_'+m.s);
+    msgs.push(m);pushMsg(m);
     const cm=['にゃーん！チュールだにゃ！😻','チュールチュール！だいすきにゃ！💕','にゃ！！！うれしいにゃ！！🎉'];
     catType(cn+'「'+r(cm)+'」',400,cn);
   }
-  save();renderMsgs();updateHouse();updateChuruBtn();
+  saveState();renderMsgs();updateHouse();updateChuruBtn();
 }
 
 function updateChuruBtn(){
@@ -623,9 +741,8 @@ const NYAO_JP={
 };
 
 function catCmt(text){
-  // updStats の前に呼ばれるので、現在のmsgCountで判定（6の倍数-1 = 送信後に6の倍数になるタイミング）
-  const cnt=(state.msgCount||0)+1;
-  if(cnt % 6 !== 0) return null;
+  // updStats already incremented msgCount before this call
+  if((state.msgCount||0) % 6 !== 0) return null;
 
   const nyao=cats.find(c=>isNyao(c)&&!c.traveling);
   const normal=cats.find(c=>!c.traveling&&!isNyao(c));
@@ -649,7 +766,13 @@ function catCmt(text){
 }
 
 // ══ MESSAGES ══
-function addMsg(sender,text,catName){msgs.push({s:sender,text,catName,ts:Date.now()});save();renderMsgs();}
+function addMsg(sender,text,catName){
+  const m={s:sender,text,catName:catName||null,ts:Date.now()};
+  knownMsgKeys.add(m.ts+'_'+m.s); // prevent echo from child_added
+  msgs.push(m);
+  pushMsg(m);
+  renderMsgs();
+}
 
 function catType(text,delay,catName){
   delay=delay??700;
@@ -784,8 +907,9 @@ document.querySelectorAll('.tab').forEach(t=>{
 function send(){
   const inp=document.getElementById('ci');const text=inp.value.trim();if(!text)return;
   inp.value='';inp.style.height='auto';
-  addMsg(myName,text);updStats(text);
-  const comment=catCmt(text);
+  addMsg(myName,text);
+  updStats(text); // increment msgCount FIRST
+  const comment=catCmt(text); // then check count
   if(comment) catType(comment.text,700,comment.cat.name);
   checkEvo();checkEgg();
 }
@@ -846,6 +970,7 @@ function enterApp(onReady){
       else catType(r(g),600,cats[0]?.name);
     }
     startRealtimeSync();
+    startPresence();
     setInterval(updateChuruBtn,60000);
     setInterval(()=>{applyBoostTick();checkEvo();if(curTab==='H')updateHouse();},60000);
   });
@@ -865,6 +990,7 @@ document.getElementById('renameCancelBtn').addEventListener('click',()=>{
 document.getElementById('renameConfirmBtn').addEventListener('click',()=>{
   const msg=document.getElementById('renameMsg');
   msg.textContent='リセット中にゃ…🐾';
+  if(onlineTimer){ clearInterval(onlineTimer); onlineTimer=null; }
   db.ref('nekotchi_users').remove().then(()=>{
     window._cachedUsers=[];
     msg.textContent='✅ リセット完了！新しい名前で入ってにゃ🐱';
