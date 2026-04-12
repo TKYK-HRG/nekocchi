@@ -317,6 +317,8 @@ const r=a=>a[Math.floor(Math.random()*a.length)];
 const todayKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
 const monthKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1);};
 
+let isSaving=false; // must be declared before save()
+
 // Read all data once from Firebase
 function load(cb){
   REF.once('value',snap=>{
@@ -356,7 +358,6 @@ function gu(cb){
 function su(u){db.ref('nekotchi_users').set(u);}
 
 // Realtime listener: sync state when other user makes changes
-let isSaving=false;
 function startRealtimeSync(){
   REF.on('value',snap=>{
     const d=snap.val();
