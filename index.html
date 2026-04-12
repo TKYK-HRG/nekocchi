@@ -317,7 +317,7 @@ const r=a=>a[Math.floor(Math.random()*a.length)];
 const todayKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();};
 const monthKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+1);};
 
-let isSaving=false; // must be declared before save()
+let isSaving=false; // kept for compatibility but no longer used
 
 // Read all data once from Firebase
 function load(cb){
@@ -340,15 +340,11 @@ function load(cb){
 
 function save(){
   if(!dbReady)return;
-  isSaving=true;
   const mObj={},cObj={},aObj={};
   msgs.slice(-500).forEach((m,i)=>mObj[i]=m);
   cats.forEach((c,i)=>cObj[i]=c);
   album.forEach((a,i)=>aObj[i]=a);
-  REF.set({state,msgs:mObj,cats:cObj,album:aObj},()=>{
-    // Flag off after Firebase confirms write
-    setTimeout(()=>{ isSaving=false; },300);
-  });
+  REF.set({state,msgs:mObj,cats:cObj,album:aObj});
 }
 
 // Users stored separately for access control
@@ -357,32 +353,36 @@ function gu(cb){
 }
 function su(u){db.ref('nekotchi_users').set(u);}
 
-// Realtime listener: sync state when other user makes changes
+// Realtime listener: only update when OTHER user changes data
 function startRealtimeSync(){
   REF.on('value',snap=>{
     const d=snap.val();
     if(!d||!dbReady)return;
-    // Skip events caused by our own save
-    if(isSaving)return;
     const newMsgs=d.msgs?Object.values(d.msgs).sort((a,b)=>a.ts-b.ts):[];
-    const newCats=d.cats?Object.values(d.cats):[];
-    const newAlbum=d.album?Object.values(d.album):[];
-    const newState=d.state||state;
-    if(JSON.stringify(newMsgs)!==JSON.stringify(msgs)){
-      msgs=newMsgs;
-      if(curTab==='C')renderMsgs();
-      else{chatU++;updateBadges();}
+    // Only update messages if there are MORE than we have locally
+    // (our own saves already rendered locally, so skip same-count updates)
+    if(newMsgs.length>msgs.length){
+      // Add only the new messages we don't have yet
+      const lastTs=msgs.length>0?msgs[msgs.length-1].ts:0;
+      const incoming=newMsgs.filter(m=>m.ts>lastTs&&m.s!==myName);
+      if(incoming.length>0){
+        msgs=newMsgs;
+        if(curTab==='C')renderMsgs();
+        else{chatU+=incoming.length;updateBadges();}
+      }
     }
+    const newCats=d.cats?Object.values(d.cats):[];
     if(JSON.stringify(newCats)!==JSON.stringify(cats)){
       cats=newCats;
       if(curTab==='H')renderCats();
     }
-    if(JSON.stringify(newAlbum)!==JSON.stringify(album)){
+    const newAlbum=d.album?Object.values(d.album):[];
+    if(newAlbum.length>album.length){
       album=newAlbum;
       if(curTab==='A')updateAlbum();
-      else{albumU++;updateBadges();}
+      else{albumU+=(newAlbum.length-album.length);updateBadges();}
     }
-    state=newState;
+    if(d.state) state=d.state;
     if(curTab==='H')updateHouse();
   });
 }
