@@ -102,28 +102,20 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .hi{margin:0 14px 12px;padding:10px 13px;border-radius:12px;background:#FFFFFF80;border:1px solid #FFE0C8;font-size:12px;color:var(--mocha);line-height:1.8;white-space:pre-wrap;}
 /* CHAT */
 #pC{background:var(--cream);overflow:hidden;}
-/* CHAT HEADER - online status */
+/* CHAT HEADER */
 .chat-header{
   padding:10px 16px 8px;
   background:#FFF5EE;
   border-bottom:1.5px solid #FFE0C8;
   display:flex;align-items:center;justify-content:space-between;
   flex-shrink:0;
-  transition:background .6s ease;
+  transition:background .4s ease;
 }
-.chat-header.online{
-  background:linear-gradient(135deg,#FFD4B8,#FFB7A3);
-  animation:headerPulse 2.5s ease-in-out infinite;
-}
-@keyframes headerPulse{0%,100%{background:linear-gradient(135deg,#FFD4B8,#FFB7A3)}50%{background:linear-gradient(135deg,#FFB7A3,#FF9E8A)}}
+.chat-header.online{background:#FFE8E0;}
 .chat-header-name{font-size:13px;font-weight:700;color:var(--dark);}
 .chat-header-status{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--mocha);}
-.online-dot{
-  width:8px;height:8px;border-radius:50%;background:#CCC;
-  transition:background .4s;flex-shrink:0;
-}
-.online-dot.on{background:#5CDB95;box-shadow:0 0 6px #5CDB9580;animation:dotPulse 1.5s ease-in-out infinite;}
-@keyframes dotPulse{0%,100%{box-shadow:0 0 4px #5CDB9560}50%{box-shadow:0 0 10px #5CDB95CC}}
+.online-dot{width:8px;height:8px;border-radius:50%;background:#CCC;transition:background .4s;flex-shrink:0;}
+.online-dot.on{background:#5CDB95;}
 .cs{flex:1;overflow-y:auto;padding:12px 12px 6px;display:flex;flex-direction:column;gap:7px;min-height:0;}
 .cs::-webkit-scrollbar{width:3px;}
 .cs::-webkit-scrollbar-thumb{background:#FFD4B8;border-radius:2px;}
@@ -132,9 +124,9 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .mr{display:flex;gap:7px;align-items:flex-end;animation:mi .22s ease;}
 @keyframes mi{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:translateY(0)}}
 .mr.me{flex-direction:row-reverse;}
-.av{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 2px 6px #00000012;background:var(--warm);}
-.av.av-me{background:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23A0A8B0'/%3E%3C!-- ears --%3E%3Cpolygon points='22,28 10,8 36,22' fill='%238090A0'/%3E%3Cpolygon points='78,28 90,8 64,22' fill='%238090A0'/%3E%3Cpolygon points='24,27 14,12 34,22' fill='%23C8B8C0'/%3E%3Cpolygon points='76,27 86,12 66,22' fill='%23C8B8C0'/%3E%3C!-- face --%3E%3Cellipse cx='50' cy='54' rx='28' ry='26' fill='%23C8D0D8'/%3E%3C!-- eyes --%3E%3Cellipse cx='40' cy='48' rx='5' ry='6' fill='%2360A060'/%3E%3Cellipse cx='60' cy='48' rx='5' ry='6' fill='%2360A060'/%3E%3Cellipse cx='40' cy='49' rx='2.5' ry='4' fill='%23222'/%3E%3Cellipse cx='60' cy='49' rx='2.5' ry='4' fill='%23222'/%3E%3C!-- nose --%3E%3Cellipse cx='50' cy='58' rx='3' ry='2' fill='%23E08080'/%3E%3C!-- mouth --%3E%3Cpath d='M44 61 Q50 66 56 61' stroke='%23888' stroke-width='1.5' fill='none'/%3E%3C!-- whiskers --%3E%3Cline x1='18' y1='57' x2='43' y2='59' stroke='%23999' stroke-width='1'/%3E%3Cline x1='18' y1='62' x2='43' y2='61' stroke='%23999' stroke-width='1'/%3E%3Cline x1='57' y1='59' x2='82' y2='57' stroke='%23999' stroke-width='1'/%3E%3Cline x1='57' y1='61' x2='82' y2='62' stroke='%23999' stroke-width='1'/%3E%3C/svg%3E");background-size:cover;}
-.av.av-other{background:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ccircle cx='50' cy='50' r='50' fill='%23E8E4DE'/%3E%3C!-- ears --%3E%3Cpolygon points='22,28 10,8 36,22' fill='%23D8D0C8'/%3E%3Cpolygon points='78,28 90,8 64,22' fill='%23D8D0C8'/%3E%3Cpolygon points='24,27 14,12 34,22' fill='%23F0C8C8'/%3E%3Cpolygon points='76,27 86,12 66,22' fill='%23F0C8C8'/%3E%3C!-- face --%3E%3Cellipse cx='50' cy='54' rx='28' ry='26' fill='%23F8F4F0'/%3E%3C!-- eyes --%3E%3Cellipse cx='40' cy='48' rx='5' ry='6' fill='%2380C0E0'/%3E%3Cellipse cx='60' cy='48' rx='5' ry='6' fill='%2380C0E0'/%3E%3Cellipse cx='40' cy='49' rx='2.5' ry='4' fill='%23222'/%3E%3Cellipse cx='60' cy='49' rx='2.5' ry='4' fill='%23222'/%3E%3C!-- nose --%3E%3Cellipse cx='50' cy='58' rx='3' ry='2' fill='%23E08080'/%3E%3C!-- mouth --%3E%3Cpath d='M44 61 Q50 66 56 61' stroke='%23AAA' stroke-width='1.5' fill='none'/%3E%3C!-- whiskers --%3E%3Cline x1='18' y1='57' x2='43' y2='59' stroke='%23CCC' stroke-width='1'/%3E%3Cline x1='18' y1='62' x2='43' y2='61' stroke='%23CCC' stroke-width='1'/%3E%3Cline x1='57' y1='59' x2='82' y2='57' stroke='%23CCC' stroke-width='1'/%3E%3Cline x1='57' y1='61' x2='82' y2='62' stroke='%23CCC' stroke-width='1'/%3E%3C/svg%3E");background-size:cover;}
+.av{width:30px;height:30px;border-radius:50%;background:var(--warm);display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;box-shadow:0 2px 6px #00000012;}
+.av.av-me{background:#B8C4CC;font-size:16px;}
+.av.av-other{background:#F5F0EB;font-size:16px;}
 .mi2{display:flex;flex-direction:column;max-width:74%;}
 .mr.me .mi2{align-items:flex-end;}
 .mn{font-size:10px;color:var(--mocha);font-weight:700;margin-bottom:2px;}
@@ -150,7 +142,30 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .td span:nth-child(2){animation-delay:.2s;}
 .td span:nth-child(3){animation-delay:.4s;}
 @keyframes dot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
-.ib{padding:9px 10px;background:#FFF5EE;border-top:1.5px solid #FFE0C8;display:flex;gap:8px;align-items:flex-end;flex-shrink:0;}
+.ib{padding:9px 10px;background:#FFF5EE;border-top:1.5px solid #FFE0C8;display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.ib-tools{display:flex;gap:6px;align-items:flex-end;}
+.quote-preview{
+  display:none;background:#FFE8D8;border-left:3px solid var(--accent);
+  padding:6px 10px;border-radius:8px;font-size:11px;color:var(--mocha);
+  position:relative;
+}
+.quote-preview.show{display:block;}
+.quote-cancel{position:absolute;right:8px;top:4px;background:none;border:none;font-size:14px;cursor:pointer;color:var(--mocha);padding:0;}
+.emoji-btn{width:36px;height:36px;border-radius:50%;background:#FFE8D8;border:none;font-size:18px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.emoji-picker{
+  display:none;position:absolute;bottom:60px;left:10px;right:10px;
+  background:#fff;border:1.5px solid #FFE0C8;border-radius:14px;
+  padding:10px;box-shadow:0 4px 20px #00000018;z-index:50;
+  display:none;flex-wrap:wrap;gap:4px;
+}
+.emoji-picker.show{display:flex;}
+.ep-emoji{font-size:22px;cursor:pointer;padding:4px;border-radius:8px;border:none;background:none;transition:background .15s;}
+.ep-emoji:hover{background:#FFE8D8;}
+.quote-bubble{
+  background:#FFE0CC;border-left:3px solid var(--accent);
+  padding:4px 8px;border-radius:6px;font-size:11px;color:var(--mocha);
+  margin-bottom:4px;
+}
 .ci{flex:1;padding:9px 13px;border-radius:20px;border:2px solid #FFD4B8;background:#fff;font-family:inherit;font-size:13px;color:var(--dark);outline:none;resize:none;max-height:90px;overflow-y:auto;line-height:1.4;transition:border-color .2s;}
 .ci:focus{border-color:var(--accent);}
 .sb2{width:40px;height:40px;border-radius:50%;background:var(--accent);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;transition:transform .15s;box-shadow:0 3px 10px #FF8C6940;flex-shrink:0;}
@@ -238,7 +253,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
       <div class="hi" id="hi"></div>
     </div>
     <!-- CHAT -->
-    <div class="panel" id="pC">
+    <div class="panel" id="pC" style="position:relative;">
       <div class="chat-header" id="chatHeader">
         <div class="chat-header-name" id="chatHeaderName">チャット</div>
         <div class="chat-header-status">
@@ -247,9 +262,43 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
         </div>
       </div>
       <div class="cs" id="cs"></div>
+      <!-- Emoji Picker -->
+      <div class="emoji-picker" id="emojiPicker">
+        <button class="ep-emoji" data-e="😊">😊</button>
+        <button class="ep-emoji" data-e="😂">😂</button>
+        <button class="ep-emoji" data-e="🥰">🥰</button>
+        <button class="ep-emoji" data-e="😭">😭</button>
+        <button class="ep-emoji" data-e="😅">😅</button>
+        <button class="ep-emoji" data-e="🤔">🤔</button>
+        <button class="ep-emoji" data-e="😴">😴</button>
+        <button class="ep-emoji" data-e="🥺">🥺</button>
+        <button class="ep-emoji" data-e="😤">😤</button>
+        <button class="ep-emoji" data-e="🤣">🤣</button>
+        <button class="ep-emoji" data-e="💕">💕</button>
+        <button class="ep-emoji" data-e="❤️">❤️</button>
+        <button class="ep-emoji" data-e="💙">💙</button>
+        <button class="ep-emoji" data-e="💚">💚</button>
+        <button class="ep-emoji" data-e="🔥">🔥</button>
+        <button class="ep-emoji" data-e="✨">✨</button>
+        <button class="ep-emoji" data-e="🎉">🎉</button>
+        <button class="ep-emoji" data-e="👍">👍</button>
+        <button class="ep-emoji" data-e="🙏">🙏</button>
+        <button class="ep-emoji" data-e="🐱">🐱</button>
+        <button class="ep-emoji" data-e="🐾">🐾</button>
+        <button class="ep-emoji" data-e="🐟">🐟</button>
+        <button class="ep-emoji" data-e="😿">😿</button>
+        <button class="ep-emoji" data-e="😻">😻</button>
+      </div>
       <div class="ib">
-        <textarea class="ci" id="ci" placeholder="メッセージを送ろう🐾" rows="1"></textarea>
-        <button class="sb2" id="sb">➤</button>
+        <div class="quote-preview" id="quotePreview">
+          <span id="quoteText"></span>
+          <button class="quote-cancel" id="quoteCancelBtn">✕</button>
+        </div>
+        <div class="ib-tools">
+          <button class="emoji-btn" id="emojiBtn">😊</button>
+          <textarea class="ci" id="ci" placeholder="メッセージを送ろう🐾" rows="1"></textarea>
+          <button class="sb2" id="sb">➤</button>
+        </div>
       </div>
     </div>
     <!-- ALBUM -->
@@ -713,7 +762,17 @@ function updStats(text){
   const sc=senti(text);
   if(window._cachedUsers&&window._cachedUsers.length===2)state.love=Math.min(100,state.love+1+Math.max(0,sc));
   state.happy=Math.min(100,Math.max(10,state.happy+sc+(text.length>10?1:0)));
-  state.msgCount++;state.lastMsg=Date.now();save();updateHouse();
+  state.msgCount++;state.lastMsg=Date.now();
+
+  // 仲良し度100%達成でチュールリセット（もう一度あげられる）
+  if(state.love>=100&&state.lastChuru===todayKey()){
+    state.lastChuru='';
+    notify('🎉 仲良し度MAX！チュールがリセットされたにゃ！もう一回あげられるよ🐟');
+    const nyao=cats.find(c=>isNyao(c));
+    if(nyao) catType(nyao.name+'「ふたりの仲の良さが天井知らずじゃ！チュールをもう一度受け取るのじゃ🐟👑」',600,nyao.name);
+  }
+
+  save();updateHouse();
 }
 
 // Boost-aware age calculation for stage
@@ -745,6 +804,7 @@ function applyBoostTick(){
 
 // ══ CAT SPEECH ══
 const NYAN=['にゃ','にゃにゃ','にゃ～','ニャ！','ごろごろ','ふにゃ','みゃ','にゃーん','ごろごろ…','にゃ？','みゃあ','にゃっ！','ぷにゃ','にゃにゃにゃ'];
+const SHAA=['シャー！','シャーッ！','ふしゃー！','シャ！'];
 const NYAO_JP={
   pos:['ふたりのなかよしパワー、わらわにも届くのじゃ💕','うむ、よい会話じゃ😸','わらわも幸せな気分じゃ🌸','きゅんとするのじゃ💖'],
   neg:['どうしたのじゃ？😿','わらわがそばにおるぞ🤗','つらいときは話すのじゃ💭'],
@@ -754,10 +814,25 @@ const NYAO_JP={
   mor:['良い朝じゃ☀️','朝から元気じゃな🌅'],
 };
 
-// Local counter - not affected by remote state sync
 let localMsgCount=0;
 
+// 名前を呼ばれたか判定
+function containsCatName(text){
+  return cats.some(c=>text.includes(c.name));
+}
+
 function catCmt(text){
+  // 名前を呼ばれた場合：33%でニャ、33%でシャー、33%で無視
+  if(containsCatName(text)){
+    const n=Math.random();
+    const speaker=cats.find(c=>text.includes(c.name)&&!c.traveling)||cats[0];
+    if(!speaker) return null;
+    if(n<0.33) return {cat:speaker, text:r(NYAN)};
+    if(n<0.66) return {cat:speaker, text:r(SHAA)};
+    return null; // 無視
+  }
+
+  // 通常：6回に1回
   localMsgCount++;
   if(localMsgCount % 6 !== 0) return null;
 
@@ -783,9 +858,12 @@ function catCmt(text){
 }
 
 // ══ MESSAGES ══
-function addMsg(sender,text,catName){
+let currentQuote=null; // {sender, text}
+
+function addMsg(sender,text,catName,quote){
   const m={s:sender,text,catName:catName||null,ts:Date.now()};
-  knownMsgKeys.add(m.ts+'_'+m.s); // prevent echo from child_added
+  if(quote) m.quote=quote;
+  knownMsgKeys.add(m.ts+'_'+m.s);
   msgs.push(m);
   pushMsg(m);
   renderMsgs();
@@ -805,7 +883,7 @@ function catType(text,delay,catName){
       ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px #00000012;">`
       :`<div class="av">${st?st.e:'🐱'}</div>`;
     row.innerHTML=`${avHtml}<div class="mi2"><div class="mn">${cat?cat.name:'ねこ'}</div><div class="bl bc"><div class="td"><span></span><span></span><span></span></div></div></div>`;
-    area.appendChild(row);area.scrollTop=area.scrollHeight;
+    area.appendChild(row);area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
     setTimeout(()=>{const el=document.getElementById(typId);if(el)el.remove();addMsg('__C__',text,cat?.name);},900);
   },delay);
 }
@@ -845,7 +923,7 @@ function renderMsgs(){
     let avClass='av';
     let avText=true;
     if(isMe){
-      avClass='av av-me'; avText=false;
+      avEmoji='🐱'; avClass='av av-me'; avText=true; // グレー猫
     } else if(isCat){
       const tc=cats.find(c=>c.name===m.catName)||cats[0];
       if(tc){
@@ -854,7 +932,7 @@ function renderMsgs(){
         else { avEmoji=tst.e; avClass='av'; avText=true; }
       } else { avEmoji='🐱'; avText=true; }
     } else {
-      avClass='av av-other'; avText=false;
+      avEmoji='🐱'; avClass='av av-other'; avText=true; // 白猫
     }
     const avel=document.createElement(avImg?'img':'div');
     avel.className=avClass;
@@ -881,16 +959,34 @@ function renderMsgs(){
     if(isMe) bub.style.borderBottomRightRadius='4px';
     else bub.style.borderBottomLeftRadius='4px';
 
+    // 引用表示
+    if(m.quote){
+      const qb=document.createElement('div');qb.className='quote-bubble';
+      qb.textContent='↩ '+m.quote.s+': '+m.quote.text.slice(0,30)+(m.quote.text.length>30?'…':'');
+      bub.appendChild(qb);
+    }
+
     if(isT&&m.spot){
-      bub.innerHTML=`<span style="font-size:26px">${m.spot.e}</span><br><b>${m.spot.n}</b><br><span style="font-size:11px;opacity:.7">${m.spot.l}</span><br><span style="font-size:11px">📸 アルバムに追加されたよ！</span>`;
+      const s=document.createElement('span');
+      s.innerHTML=`<span style="font-size:26px">${m.spot.e}</span><br><b>${m.spot.n}</b><br><span style="font-size:11px;opacity:.7">${m.spot.l}</span><br><span style="font-size:11px">📸 アルバムに追加されたよ！</span>`;
+      bub.appendChild(s);
     } else if(isCH){
       const ct=m.ctype;
-      if(ct==='gold') bub.textContent='✨ 金チュールもらったにゃ！3日間成長2倍速！👑';
-      else if(ct==='silver') bub.textContent='🌸 銀チュールもらったにゃ！1日間成長1.5倍速！';
-      else bub.textContent='🐟 チュールもらったにゃ！きぶん+15💕';
+      const s=document.createElement('span');
+      if(ct==='gold') s.textContent='✨ 金チュールもらったにゃ！3日間成長2倍速！👑';
+      else if(ct==='silver') s.textContent='🌸 銀チュールもらったにゃ！1日間成長1.5倍速！';
+      else s.textContent='🐟 チュールもらったにゃ！きぶん+15💕';
+      bub.appendChild(s);
     } else {
-      bub.textContent=m.text||'';
+      const s=document.createElement('span');s.textContent=m.text||'';
+      bub.appendChild(s);
     }
+
+    // 長押しで引用返信
+    let pt=null;
+    bub.addEventListener('touchstart',()=>{ pt=setTimeout(()=>setQuote({s:isMe?myName:m.s,text:m.text||''}),500); });
+    bub.addEventListener('touchend',()=>clearTimeout(pt));
+    bub.addEventListener('touchmove',()=>clearTimeout(pt));
 
     const tm=document.createElement('div');tm.className='mt';
     tm.textContent=d.toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
@@ -900,7 +996,7 @@ function renderMsgs(){
     else { row.appendChild(avel);row.appendChild(inner); }
     area.appendChild(row);
   }
-  area.scrollTop=area.scrollHeight;
+  area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
 }
 
 // ══ HOUSE ══
@@ -984,13 +1080,48 @@ document.querySelectorAll('.tab').forEach(t=>{
   });
 });
 
+// ══ QUOTE & EMOJI ══
+function setQuote(q){
+  currentQuote=q;
+  const p=document.getElementById('quotePreview');
+  const t=document.getElementById('quoteText');
+  p.classList.add('show');
+  t.textContent=q.s+': '+q.text.slice(0,40)+(q.text.length>40?'…':'');
+  document.getElementById('ci').focus();
+}
+function clearQuote(){
+  currentQuote=null;
+  document.getElementById('quotePreview').classList.remove('show');
+}
+document.getElementById('quoteCancelBtn').addEventListener('click',clearQuote);
+
+// Emoji picker
+const ep=document.getElementById('emojiPicker');
+document.getElementById('emojiBtn').addEventListener('click',e=>{
+  e.stopPropagation();
+  ep.classList.toggle('show');
+});
+document.querySelectorAll('.ep-emoji').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    const ci=document.getElementById('ci');
+    ci.value+=btn.dataset.e;
+    ci.style.height='auto';
+    ci.style.height=Math.min(ci.scrollHeight,90)+'px';
+    ep.classList.remove('show');
+    ci.focus();
+  });
+});
+document.addEventListener('click',()=>ep.classList.remove('show'));
+
 // ══ SEND ══
 function send(){
   const inp=document.getElementById('ci');const text=inp.value.trim();if(!text)return;
   inp.value='';inp.style.height='auto';
-  addMsg(myName,text);
-  updStats(text); // increment msgCount FIRST
-  const comment=catCmt(text); // then check count
+  const quote=currentQuote?{...currentQuote}:null;
+  clearQuote();
+  addMsg(myName,text,null,quote);
+  updStats(text);
+  const comment=catCmt(text);
   if(comment) catType(comment.text,700,comment.cat.name);
   checkEvo();checkEgg();
 }
