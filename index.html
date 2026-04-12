@@ -340,12 +340,15 @@ function load(cb){
 
 function save(){
   if(!dbReady)return;
-  lastSaveTs=Date.now();
+  isSaving=true;
   const mObj={},cObj={},aObj={};
   msgs.slice(-500).forEach((m,i)=>mObj[i]=m);
   cats.forEach((c,i)=>cObj[i]=c);
   album.forEach((a,i)=>aObj[i]=a);
-  REF.set({state,msgs:mObj,cats:cObj,album:aObj});
+  REF.set({state,msgs:mObj,cats:cObj,album:aObj},()=>{
+    // Flag off after Firebase confirms write
+    setTimeout(()=>{ isSaving=false; },300);
+  });
 }
 
 // Users stored separately for access control
@@ -355,13 +358,13 @@ function gu(cb){
 function su(u){db.ref('nekotchi_users').set(u);}
 
 // Realtime listener: sync state when other user makes changes
-let lastSaveTs=0;
+let isSaving=false;
 function startRealtimeSync(){
   REF.on('value',snap=>{
     const d=snap.val();
     if(!d||!dbReady)return;
-    // Ignore events triggered by our own save (within 2 seconds)
-    if(Date.now()-lastSaveTs<2000)return;
+    // Skip events caused by our own save
+    if(isSaving)return;
     const newMsgs=d.msgs?Object.values(d.msgs).sort((a,b)=>a.ts-b.ts):[];
     const newCats=d.cats?Object.values(d.cats):[];
     const newAlbum=d.album?Object.values(d.album):[];
