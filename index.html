@@ -443,25 +443,33 @@ function updateOnlineUI(otherName, isOnline){
 const knownMsgKeys=new Set();
 
 function startRealtimeSync(){
-  // IMPORTANT: register all loaded msgs BEFORE attaching listener
+  // Register all loaded msgs as known
   msgs.forEach(m=>knownMsgKeys.add(m.ts+'_'+m.s));
 
-  // child_added fires for ALL existing children first, then new ones
-  // knownMsgKeys blocks the existing ones, only new ones get through
-  REF.child('msgs').on('child_added',snap=>{
-    if(!dbReady)return;
-    const m=snap.val();
-    if(!m||!m.ts)return;
-    const key=m.ts+'_'+m.s;
-    if(knownMsgKeys.has(key))return;
-    knownMsgKeys.add(key);
-    msgs.push(m);
-    msgs.sort((a,b)=>a.ts-b.ts);
-    if(curTab==='C') renderMsgs();
-    else{ chatU++; updateBadges(); }
-  });
+  // ── Chat: poll every 3 seconds ──
+  // Simple and reliable - checks for new msgs periodically
+  setInterval(()=>{
+    REF.child('msgs').once('value',snap=>{
+      if(!snap.val())return;
+      const all=Object.values(snap.val()).sort((a,b)=>a.ts-b.ts);
+      let hasNew=false;
+      all.forEach(m=>{
+        const key=m.ts+'_'+m.s;
+        if(!knownMsgKeys.has(key)){
+          knownMsgKeys.add(key);
+          msgs.push(m);
+          hasNew=true;
+        }
+      });
+      if(hasNew){
+        msgs.sort((a,b)=>a.ts-b.ts);
+        if(curTab==='C') renderMsgs();
+        else{ chatU++; updateBadges(); }
+      }
+    });
+  }, 3000);
 
-  // Cats - only update if genuinely different
+  // ── Cats ──
   REF.child('cats').on('value',snap=>{
     if(!dbReady||!snap.val())return;
     const nc=Object.values(snap.val());
@@ -471,7 +479,7 @@ function startRealtimeSync(){
     }
   });
 
-  // Album
+  // ── Album ──
   REF.child('album').on('value',snap=>{
     if(!dbReady||!snap.val())return;
     const na=Object.values(snap.val());
@@ -483,11 +491,10 @@ function startRealtimeSync(){
     }
   });
 
-  // State - skip checkNeglect here to avoid triggering on every remote update
+  // ── State ──
   REF.child('state').on('value',snap=>{
     if(!dbReady||!snap.val())return;
     const ns=snap.val();
-    // Only update fields we don't own (avoid overwriting local love/happy mid-session)
     state.love=ns.love??state.love;
     state.happy=ns.happy??state.happy;
     state.lastEgg=ns.lastEgg??state.lastEgg;
