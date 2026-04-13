@@ -978,7 +978,7 @@ let localMsgCount=0;
 
 // 名前を呼ばれたか判定
 function containsCatName(text){
-  return cats.some(c=>text.includes(c.name));
+  return cats.some(c=>c&&c.name&&text.includes(c.name));
 }
 
 let praiseCount=0; // 褒め言葉カウンター
@@ -1351,6 +1351,10 @@ function send(){
   clearQuote();
   addMsg(myName,text,null,quote);
   updStats(text);
+  // DEBUG: 猫名検出確認
+  const names=cats.map(c=>c.name).join(',');
+  const hit=containsCatName(text);
+  notify('🐛 cats:'+names+' | hit:'+hit);
   const comment=catCmt(text);
   if(comment) catType(comment.text,700,comment.cat.name);
   checkEvo();checkEgg();
