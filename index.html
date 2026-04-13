@@ -1009,15 +1009,16 @@ function catCmt(text){
       return {cat:speaker, text:r(NYAN)};
     }
 
-    if(n<0.55) return {cat:speaker, text:r(NYAN)};
-    if(n<0.75){
+    // 通常時：50%にゃ、30%シャー、15%無視、5%ウー
+    if(n<0.50) return {cat:speaker, text:r(NYAN)};
+    if(n<0.80){
       state.happy=Math.max(0,state.happy-5);
       state.love=Math.max(0,state.love-7);
       shaaTs=Date.now();
       save();updateHouse();
       return {cat:speaker, text:r(SHAA)};
     }
-    if(n<0.95) return null;
+    if(n<0.95) return null; // 15%：無視
     state.love=Math.max(0,state.love-10);
     state.happy=Math.max(0,state.happy-10);
     save();updateHouse();
@@ -1351,10 +1352,6 @@ function send(){
   clearQuote();
   addMsg(myName,text,null,quote);
   updStats(text);
-  // DEBUG: 猫名検出確認
-  const names=cats.map(c=>c.name).join(',');
-  const hit=containsCatName(text);
-  notify('🐛 cats:'+names+' | hit:'+hit);
   const comment=catCmt(text);
   if(comment) catType(comment.text,700,comment.cat.name);
   checkEvo();checkEgg();
