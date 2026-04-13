@@ -70,7 +70,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .sf.hp{background:linear-gradient(90deg,#89C4E1,#7EC8A4);}
 .sv{font-size:10px;color:var(--mocha);width:30px;text-align:right;}
 /* CHURU */
-.chw{padding:10px 16px 4px;display:flex;align-items:center;gap:10px;}
+.chw{padding:10px 16px 4px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;}
 .chb{display:flex;align-items:center;gap:6px;padding:8px 18px;border-radius:999px;background:linear-gradient(135deg,#FF8C69,#FF6B6B);color:#fff;border:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 3px 12px #FF8C6940;transition:transform .15s,opacity .2s;}
 .chb:hover{transform:scale(1.05);}
 .chb:active{transform:scale(.96);}
@@ -265,6 +265,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
         <button class="chb" id="chb">🐟 チュールをあげる</button>
         <div class="chs" id="chs">きょうのぶん、まだあるよ！</div>
         <button class="jarashi-btn" id="jarashiBtn">🎋 あそぶ</button>
+        <button class="jarashi-btn" id="jarashiPracticeBtn" style="background:linear-gradient(135deg,#B0C4DE,#89A8C8);">🎋 練習</button>
       </div>
       <div id="boostBanner" style="display:none"></div>
       <div class="cg" id="cg"></div>
@@ -444,7 +445,7 @@ const monthKey=()=>{const d=new Date();return d.getFullYear()+'-'+(d.getMonth()+
 function load(cb){
   REF.once('value',snap=>{
     const d=snap.val()||{};
-    state=d.state||{love:0,happy:50,msgCount:0,lastMsg:Date.now(),lastEgg:'',lastEgg20:'',lastChuru:'',petCount:0};
+    state=d.state||{love:0,happy:50,msgCount:0,lastMsg:Date.now(),lastEgg:'',lastEgg20:'',lastChuruTs:0,petCount:0,churuBonusUsed:false,jarashiPlayed:false};
     // Load existing messages
     const rawMsgs=d.msgs?Object.values(d.msgs):[];
     msgs=rawMsgs.sort((a,b)=>a.ts-b.ts);
@@ -595,10 +596,11 @@ function startRealtimeSync(){
     state.happy=ns.happy??state.happy;
     state.lastEgg=ns.lastEgg??state.lastEgg;
     state.lastEgg20=ns.lastEgg20??state.lastEgg20;
-    state.lastChuru=ns.lastChuru??state.lastChuru;
-    state.churuLocked=ns.churuLocked??state.churuLocked;
+    state.lastChuruTs=ns.lastChuruTs??state.lastChuruTs;
+    state.churuBonusUsed=ns.churuBonusUsed??state.churuBonusUsed;
     state.jarashiPlayed=ns.jarashiPlayed??state.jarashiPlayed;
     state.lastMsg=ns.lastMsg??state.lastMsg;
+    // decayDay系はローカル判定のため上書きしない
     if(curTab==='H') updateHouse();
     else checkNeglect(); // タブに関わらず警告を更新
   });
@@ -787,13 +789,27 @@ function applyDecay(){
 }
 
 // ══ CHURU ══
-function churuOK(){return state.lastChuru!==todayKey()&&!state.churuLocked;}
+// チュールOK：24時間経過 or love100%ボーナス未使用
+function churuOK(){
+  const elapsed=Date.now()-(state.lastChuruTs||0);
+  const normalOK=elapsed>=24*60*60*1000;
+  return normalOK;
+}
+function churuBonusOK(){
+  // love100%達成中 かつ ボーナス未使用 かつ 通常チュール使用済み
+  const elapsed=Date.now()-(state.lastChuruTs||0);
+  return state.love>=100 && !state.churuBonusUsed && elapsed<24*60*60*1000;
+}
+
 function rollChuruType(){const n=Math.random();if(n<0.10)return'gold';if(n<0.30)return'silver';return'normal';}
 
 function giveChuru(){
-  if(!churuOK())return;
+  const isBonus=churuBonusOK();
+  const ok=churuOK()||isBonus;
+  if(!ok)return;
   const type=rollChuruType();
-  state.lastChuru=todayKey();
+  if(isBonus) state.churuBonusUsed=true; // ボーナス使用フラグを先にセット
+  state.lastChuruTs=Date.now();
   state.happy=Math.min(100,state.happy+15);
   state.love=Math.min(100,state.love+5);
   const btn=document.getElementById('chb');
@@ -838,17 +854,23 @@ function updateChuruBtn(){
     if(boost.type==='gold'){banner.className='boost-banner gold-b';banner.textContent='✨ 金チュール効果中！成長2倍速 あと'+h+'時間'+m+'分';}
     else{banner.className='boost-banner silver-b';banner.textContent='🌸 銀チュール効果中！成長1.5倍速 あと'+h+'時間'+m+'分';}
   }else{banner.style.display='none';}
+
   if(churuOK()){
     btn.disabled=false;btn.className='chb';btn.textContent='🐟 チュールをあげる';
     st.textContent='きょうのぶん、まだあるよ！（金・銀チュールが出るかも？）';st.style.color='var(--mocha)';
-  }else if(state.churuLocked){
-    btn.disabled=true;btn.className='chb';
-    st.textContent='仲良し度が90%を下回るまでロック中にゃ🔒';st.style.color='#AAA';
+  }else if(churuBonusOK()){
+    btn.disabled=false;btn.className='chb';btn.textContent='🐟 ボーナスチュール！';
+    st.textContent='🎉 仲良し度MAX！もう1回あげられるよ！';st.style.color='var(--accent)';
   }else{
     btn.disabled=true;btn.className='chb';
-    const now=new Date(),next=new Date(now.getFullYear(),now.getMonth(),now.getDate()+1);
-    const diff=next-now,h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000);
-    st.textContent='つぎは '+h+'時間'+m+'分後にゃ';st.style.color='#AAA';
+    const elapsed=Date.now()-(state.lastChuruTs||0);
+    const left=24*60*60*1000-elapsed;
+    const h=Math.floor(left/3600000),m=Math.floor((left%3600000)/60000);
+    if(state.love>=100&&state.churuBonusUsed){
+      st.textContent='love90%未満になるとまたボーナスが解放されるにゃ🔒';st.style.color='#AAA';
+    }else{
+      st.textContent='つぎは '+h+'時間'+m+'分後にゃ';st.style.color='#AAA';
+    }
   }
   updateJarashiBtn();
 }
@@ -884,18 +906,18 @@ function updStats(text){
   state.decayDay1Applied=false;
   state.lastHappyDecayDay=0;
 
-  // 仲良し度100%達成でチュールリセット
-  if(state.love>=100&&state.lastChuru===todayKey()&&!state.churuLocked){
-    state.churuLocked=true;
-    state.lastChuru='';
-    notify('🎉 仲良し度MAX！チュールがリセットされたにゃ！もう一回あげられるよ🐟');
-    const nyao=cats.find(c=>isNyao(c));
-    if(nyao) catType(nyao.name+'「ふたりの仲の良さが天井知らずじゃ！チュールをもう一度受け取るのじゃ🐟👑」',600,nyao.name);
+  // love100%達成時にボーナスフラグを通知
+  if(state.love>=100&&!state.churuBonusUsed){
+    const elapsed=Date.now()-(state.lastChuruTs||0);
+    if(elapsed<24*60*60*1000){
+      notify('🎉 仲良し度MAX！ボーナスチュールが解放されたにゃ🐟');
+      updateChuruBtn();
+    }
   }
-  // love90%未満になったらロック解除
-  if(state.churuLocked&&state.love<90){
-    state.churuLocked=false;
-    state.jarashiPlayed=false; // 次のロック時にまた遊べる
+  // love90%未満でボーナスリセット
+  if(state.love<90&&state.churuBonusUsed){
+    state.churuBonusUsed=false;
+    state.jarashiPlayed=false;
   }
 
   save();updateHouse();
@@ -937,7 +959,7 @@ const KOROKORO=[
   'ごろごろごろ…ごろごろごろ…💕💕','にゃ！ごろごろごろごろ！🐾✨',
   'ごろごろごろごろごろごろごろ🐾🐾🐾'
 ];
-const PRAISE_WORDS=['かわいい','可愛い','かわええ','ステキ','素敵','いい子','よい子','よく','えらい','上手','じょうず','かしこい','賢い','きれい','綺麗','かっこいい','格好いい','天才','最高','すごい','凄い'];
+const PRAISE_WORDS=['かわいい','可愛い','かわええ','ステキ','素敵','いい子','よい子','えらい','上手','じょうず','かしこい','賢い','きれい','綺麗','かっこいい','格好いい','天才','最高','すごい','凄い'];
 
 function containsPraise(text){
   return PRAISE_WORDS.some(w=>text.includes(w));
@@ -1406,25 +1428,24 @@ function enterApp(onReady){
   });
 }
 // ══ NEKOJARASHI GAME ══
-// 1人1回：チュールがロックされた時に1回だけ遊べる（Firebaseで管理）
 function jarashiCanPlay(){
-  return state.churuLocked && !state.jarashiPlayed;
+  // ボーナスチュール使用済み かつ 未プレイの時だけ遊べる
+  return state.churuBonusUsed && !state.jarashiPlayed;
 }
 function jarashiSetPlayed(){
   state.jarashiPlayed=true;
   save();
 }
-// churuLockedがfalseになったらjarashiPlayedもリセット（次のロック時に遊べる）
 
 let ngRunning=false,ngTimer=null,ngHandTimer=null,ngSec=10;
-let ngPX=50,ngPY=50; // player position %
-let ngHX=10,ngHY=10; // hand position %
-const SPEED=8; // player move step %
+let ngPX=50,ngPY=50;
+let ngHX=10,ngHY=10;
+let ngPractice=false;
 
 function updateJarashiBtn(){
   const btn=document.getElementById('jarashiBtn');
   if(!btn)return;
-  if(!state.churuLocked){
+  if(!state.churuBonusUsed){
     btn.style.display='none';
   } else if(state.jarashiPlayed){
     btn.style.display='';btn.disabled=true;
@@ -1435,12 +1456,13 @@ function updateJarashiBtn(){
   }
 }
 
-function startNekoGame(){
-  if(!jarashiCanPlay()){
-    if(!state.churuLocked) notify('チュールがロック中の時だけ遊べるにゃ🎋');
-    else notify('もう遊んだにゃ！次のロックまで待ってにゃ🎋');
+function startNekoGame(practice=false){
+  if(!practice&&!jarashiCanPlay()){
+    if(!state.churuBonusUsed) notify('ボーナスチュールを使った後に遊べるにゃ🎋');
+    else notify('もう遊んだにゃ！次のボーナスまで待ってにゃ🎋');
     return;
   }
+  ngPractice=practice;
   ngRunning=true;ngSec=10;ngPX=50;ngPY=50;ngHX=10;ngHY=10;
   const game=document.getElementById('nekoGame');
   const result=document.getElementById('ngResult');
@@ -1484,24 +1506,36 @@ function positionEl(id,px,py){
 }
 
 function endNekoGame(escaped){
+  if(!ngRunning)return; // 二重呼び出し防止
   ngRunning=false;
   clearInterval(ngTimer);clearInterval(ngHandTimer);
-  jarashiSetPlayed();
-  updateJarashiBtn();
   const result=document.getElementById('ngResult');
   result.style.display='flex';
+
   if(escaped){
     document.getElementById('ngResultIcon').textContent='🎉';
-    document.getElementById('ngResultMsg').textContent='逃げ切った！';
-    document.getElementById('ngResultSub').textContent='チュールが復活したにゃ🐟\nよく逃げたにゃ！';
-    // チュールリセット
-    state.lastChuru='';state.churuLocked=false;
-    save();updateChuruBtn();
+    if(ngPractice){
+      // 練習モード：love+1のみ
+      state.love=Math.min(100,state.love+1);
+      save();updateHouse();
+      document.getElementById('ngResultMsg').textContent='練習クリア！';
+      document.getElementById('ngResultSub').textContent='なかよし+1にゃ🐾\n本番でチュールを復活させよう！';
+    } else {
+      // 本番モード：チュール復活＋love+1
+      state.love=Math.min(100,state.love+1);
+      state.lastChuruTs=0; // チュール復活
+      jarashiSetPlayed();
+      updateJarashiBtn();
+      save();updateChuruBtn();
+      document.getElementById('ngResultMsg').textContent='逃げ切った！';
+      document.getElementById('ngResultSub').textContent='チュールが復活したにゃ🐟\nなかよし+1！よく逃げたにゃ！';
+    }
     confetti();
   } else {
     document.getElementById('ngResultIcon').textContent='😹';
     document.getElementById('ngResultMsg').textContent='つかまえた！';
-    document.getElementById('ngResultSub').textContent='猫じゃらしに負けたにゃ…\nまた明日チャレンジするにゃ🎋';
+    document.getElementById('ngResultSub').textContent=ngPractice?'練習なのにつかまっちゃったにゃ😹':'猫じゃらしに負けたにゃ…\nまたチャレンジしてにゃ🎋';
+    if(!ngPractice){ jarashiSetPlayed(); updateJarashiBtn(); }
   }
 }
 
@@ -1531,7 +1565,9 @@ function initGameListeners(){
     updateHouse();
   });
   const jarashiBtn=document.getElementById('jarashiBtn');
-  if(jarashiBtn) jarashiBtn.addEventListener('click',startNekoGame);
+  if(jarashiBtn) jarashiBtn.addEventListener('click',()=>startNekoGame(false));
+  const practiceBtn=document.getElementById('jarashiPracticeBtn');
+  if(practiceBtn) practiceBtn.addEventListener('click',()=>startNekoGame(true));
 }
 
 document.getElementById('enterBtn').addEventListener('click',tryEnter);
