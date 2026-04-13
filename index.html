@@ -332,7 +332,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 <!-- NEKOJARASHI GAME -->
 <div id="nekoGame">
   <div class="ng-header">
-    <div class="ng-title">🎋 猫じゃらしから逃げろ！</div>
+    <div class="ng-title">🎋 ニゲロ！</div>
     <div class="ng-timer" id="ngTimer">10</div>
   </div>
   <div class="ng-hint">画面をタップして逃げるにゃ！🐾</div>
@@ -984,33 +984,15 @@ function containsCatName(text){
 let praiseCount=0; // 褒め言葉カウンター
 
 function catCmt(text){
-  // 褒め言葉 → 3回カウントでころころ発動
-  if(containsPraise(text)){
-    praiseCount++;
-    if(praiseCount>=3){
-      praiseCount=0;
-      const speaker=cats.find(c=>!c.traveling)||cats[0];
-      if(speaker){
-        state.happy=Math.min(100,state.happy+3);
-        save();updateHouse();
-        setTimeout(()=>catType(r(KOROKORO),1400,speaker.name),0);
-        setTimeout(()=>catType(r(KOROKORO),2900,speaker.name),0);
-        return {cat:speaker, text:r(KOROKORO)};
-      }
-    }
-    return null; // 1〜2回目は反応しない
-  }
-
+  // 名前を呼ばれた場合を最優先（褒め言葉より先に判定）
   if(containsCatName(text)){
     const n=Math.random();
     const speaker=cats.find(c=>text.includes(c.name)&&!c.traveling)||cats[0];
     if(!speaker) return null;
 
-    // シャー後10秒以内はウー確率60%
     const shaaRecent=(Date.now()-shaaTs)<10000;
 
     if(shaaRecent){
-      // 60%：ウー、20%：シャー、20%：にゃ
       if(n<0.60){
         state.love=Math.max(0,state.love-10);
         state.happy=Math.max(0,state.happy-10);
@@ -1027,7 +1009,6 @@ function catCmt(text){
       return {cat:speaker, text:r(NYAN)};
     }
 
-    // 通常時：55%にゃ、20%シャー、20%無視、5%ウー
     if(n<0.55) return {cat:speaker, text:r(NYAN)};
     if(n<0.75){
       state.happy=Math.max(0,state.happy-5);
@@ -1036,12 +1017,28 @@ function catCmt(text){
       save();updateHouse();
       return {cat:speaker, text:r(SHAA)};
     }
-    if(n<0.95) return null; // 20%：無視
-    // 5%：ウー
+    if(n<0.95) return null;
     state.love=Math.max(0,state.love-10);
     state.happy=Math.max(0,state.happy-10);
     save();updateHouse();
     return {cat:speaker, text:r(WUU)};
+  }
+
+  // 褒め言葉 → 3回カウントでころころ発動
+  if(containsPraise(text)){
+    praiseCount++;
+    if(praiseCount>=3){
+      praiseCount=0;
+      const speaker=cats.find(c=>!c.traveling)||cats[0];
+      if(speaker){
+        state.happy=Math.min(100,state.happy+3);
+        save();updateHouse();
+        setTimeout(()=>catType(r(KOROKORO),1400,speaker.name),0);
+        setTimeout(()=>catType(r(KOROKORO),2900,speaker.name),0);
+        return {cat:speaker, text:r(KOROKORO)};
+      }
+    }
+    return null;
   }
 
   // 通常：6回に1回
@@ -1085,18 +1082,23 @@ function catType(text,delay,catName){
   delay=delay??700;
   setTimeout(()=>{
     const area=document.getElementById('cs');
-    if(!area)return;
     const cat=cats.find(c=>c.name===catName)||cats[0];
-    const st=cat?stOf(cat):null;
+    if(!area||!cat)return;
+    const st=stOf(cat);
     const typId='typ_'+Date.now();
     const row=document.createElement('div');row.id=typId;row.className='mr';
-    // avatar: photo or emoji
     const avHtml=st?.img
       ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px #00000012;">`
       :`<div class="av">${st?st.e:'🐱'}</div>`;
-    row.innerHTML=`${avHtml}<div class="mi2"><div class="mn">${cat?cat.name:'ねこ'}</div><div class="bl bc"><div class="td"><span></span><span></span><span></span></div></div></div>`;
-    area.appendChild(row);area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
-    setTimeout(()=>{const el=document.getElementById(typId);if(el)el.remove();addMsg('__C__',text,cat?.name);},900);
+    row.innerHTML=`${avHtml}<div class="mi2"><div class="mn">${cat.name}</div><div class="bl bc"><div class="td"><span></span><span></span><span></span></div></div></div>`;
+    area.appendChild(row);
+    area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
+    setTimeout(()=>{
+      const el=document.getElementById(typId);
+      if(el) el.remove();
+      // addMsgを呼ぶ前にrenderMsgsが走っていてもメッセージは確実に保存・表示
+      addMsg('__C__',text,cat.name);
+    },900);
   },delay);
 }
 
@@ -1534,7 +1536,7 @@ function endNekoGame(escaped){
   } else {
     document.getElementById('ngResultIcon').textContent='😹';
     document.getElementById('ngResultMsg').textContent='つかまえた！';
-    document.getElementById('ngResultSub').textContent=ngPractice?'練習なのにつかまっちゃったにゃ😹':'猫じゃらしに負けたにゃ…\nまたチャレンジしてにゃ🎋';
+    document.getElementById('ngResultSub').textContent=ngPractice?'練習なのにつかまっちゃったにゃ😹':'ニゲロに負けたにゃ…\nまたチャレンジしてにゃ🎋';
     if(!ngPractice){ jarashiSetPlayed(); updateJarashiBtn(); }
   }
 }
