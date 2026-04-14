@@ -210,6 +210,13 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .ng-hint{font-size:12px;color:var(--mocha);text-align:center;padding:6px 20px;flex-shrink:0;}
 .jarashi-btn{display:flex;align-items:center;gap:5px;padding:7px 14px;border-radius:999px;background:linear-gradient(135deg,#A0D8A0,#7EC8A4);color:#fff;border:none;font-family:inherit;font-size:12px;font-weight:700;cursor:pointer;box-shadow:0 3px 10px #7EC8A440;transition:transform .15s,opacity .2s;margin-left:6px;}
 .jarashi-btn:disabled{opacity:.4;cursor:not-allowed;transform:none;}
+/* CAT NAMING */
+.name-input-wrap{background:linear-gradient(135deg,#FFF0E0,#FFE8CC);border:2px solid #FFD4B8;border-radius:16px;padding:12px 14px;margin:4px 0;display:flex;flex-direction:column;gap:8px;}
+.name-input-wrap .ni-label{font-size:12px;color:var(--mocha);font-weight:700;}
+.name-input-row{display:flex;gap:8px;align-items:center;}
+.name-input-row input{flex:1;padding:8px 12px;border-radius:999px;border:2px solid #FFD4B8;background:#fff;font-family:inherit;font-size:14px;color:var(--dark);outline:none;}
+.name-input-row input:focus{border-color:var(--accent);}
+.name-input-row button{padding:8px 16px;border-radius:999px;background:var(--accent);color:#fff;border:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
 </style>
 </head>
 <body>
@@ -410,8 +417,8 @@ const DMS=DEMO?60*1000:24*60*60*1000;
 const STG=[
   {n:'たまご',    e:'🥚', d:0},
   {n:'こねこ',    e:'🐱', d:1/24, img:'https://TKYK-HRG.github.io/nekocchi/mike.jpg'},
-  {n:'ねこ',      e:'😺', d:3},
-  {n:'にゃおうさま',e:'👑',d:15},
+  {n:'ねこ',      e:'😺', d:5,    img:'https://TKYK-HRG.github.io/nekocchi/oban2.jpg'},
+  {n:'にゃおうさま',e:'👑',d:10,  img:'https://TKYK-HRG.github.io/nekocchi/king.jpg'},
 ];
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
 const TNEG=DEMO?4*60*1000:4*24*60*60*1000; // 4日で逃げる
@@ -620,17 +627,130 @@ db.ref('nekotchi_boost').on('value',snap=>{ window._lastBoost=snap.val()||null; 
 // (stOf, stIdx, isNyao are defined after boost section to use boostedAge)
 
 function spawnCat(first){
-  const name=CNAMES[cats.length%CNAMES.length];
+  const defaultName=CNAMES[cats.length%CNAMES.length];
+  if(first){
+    // 初回は直接生成
+    cats.push({id:Date.now(),name:defaultName,born:Date.now(),si:0,traveling:false});
+    save();
+    return;
+  }
+  // 🥚生まれた通知＋名前入力UIをチャットに表示
+  notify('🥚 たまごが生まれた！名前をつけてにゃ！');
+  confetti();
+  updateHouse();
+  // チャットに名前入力UIを表示
+  setTimeout(()=>showNamingUI(defaultName),500);
+}
+
+function showNamingUI(defaultName){
+  const area=document.getElementById('cs');
+  if(!area)return;
+  const wrapId='naming_'+Date.now();
+  const wrap=document.createElement('div');wrap.id=wrapId;wrap.className='mr';
+  wrap.innerHTML=`
+    <div class="av">🥚</div>
+    <div class="mi2" style="max-width:80%">
+      <div class="mn">ねこっち</div>
+      <div class="name-input-wrap">
+        <div class="ni-label">🥚 たまごが生まれたにゃ！名前をつけてね</div>
+        <div class="name-input-row">
+          <input id="catNameInput" placeholder="${defaultName}" maxlength="6" autocomplete="off">
+          <button id="catNameBtn">決定</button>
+        </div>
+      </div>
+    </div>`;
+  area.appendChild(wrap);
+  area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
+
+  // タブをチャットに切り替え
+  if(curTab!=='C'){
+    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+    document.querySelector('[data-tab="C"]').classList.add('active');
+    document.getElementById('pC').classList.add('active');
+    curTab='C';
+    chatU=0;updateBadges();
+    renderMsgs();
+    // UIを再追加（renderMsgsがinnerHTML=''するため）
+    setTimeout(()=>{
+      area.appendChild(wrap);
+      area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
+      setupNamingBtn(wrapId,defaultName);
+    },50);
+    return;
+  }
+  setupNamingBtn(wrapId,defaultName);
+}
+
+function setupNamingBtn(wrapId,defaultName){
+  const btn=document.getElementById('catNameBtn');
+  if(!btn)return;
+  btn.addEventListener('click',()=>{
+    const input=document.getElementById('catNameInput');
+    const name=(input?.value.trim())||defaultName;
+    commitCatName(name,wrapId);
+  });
+  const input=document.getElementById('catNameInput');
+  if(input) input.addEventListener('keydown',e=>{
+    if(e.key==='Enter'){
+      const name=(input.value.trim())||defaultName;
+      commitCatName(name,wrapId);
+    }
+  });
+}
+
+function commitCatName(name,wrapId){
   cats.push({id:Date.now(),name,born:Date.now(),si:0,traveling:false});
   save();
-  if(!first){
-    setTimeout(()=>{
-      notify('🥚 '+name+' のたまごが生まれた！');
-      catType('🥚 にゃおうさまがたまごを産んだにゃ！\nようこそ、'+name+'ちゃん！',400,name);
-      confetti();
-      updateHouse();
-    },500);
-  }
+  const el=document.getElementById(wrapId);
+  if(el)el.remove();
+  addMsg('__C__','🥚 '+name+' のたまごが生まれたにゃ！ようこそ！💕',CNAMES[0]);
+  updateHouse();
+  renderMsgs();
+}
+
+function showRenameUI(cat){
+  const area=document.getElementById('cs');
+  if(!area)return;
+  const st=stOf(cat);
+  const wrapId='rename_'+Date.now();
+  const avHtml=st?.img
+    ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+    :`<div class="av">${st.e}</div>`;
+  const wrap=document.createElement('div');wrap.id=wrapId;wrap.className='mr';
+  wrap.innerHTML=`
+    ${avHtml}
+    <div class="mi2" style="max-width:80%">
+      <div class="mn">${cat.name}</div>
+      <div class="name-input-wrap">
+        <div class="ni-label">${st.e} ${st.n}になったにゃ！名前を変える？（そのままでもOK）</div>
+        <div class="name-input-row">
+          <input id="renameInput_${wrapId}" placeholder="${cat.name}" maxlength="6" autocomplete="off">
+          <button id="renameBtn_${wrapId}">変更</button>
+        </div>
+      </div>
+    </div>`;
+  area.appendChild(wrap);
+  area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
+
+  const btn=document.getElementById('renameBtn_'+wrapId);
+  const input=document.getElementById('renameInput_'+wrapId);
+  if(!btn||!input)return;
+
+  const doRename=()=>{
+    const newName=input.value.trim();
+    const el=document.getElementById(wrapId);
+    if(el)el.remove();
+    if(newName&&newName!==cat.name){
+      const oldName=cat.name;
+      cat.name=newName;
+      save();
+      addMsg('__C__',oldName+' の名前が「'+newName+'」になったにゃ！'+st.e,cat.name);
+      updateHouse();renderMsgs();
+    }
+  };
+  btn.addEventListener('click',doRename);
+  input.addEventListener('keydown',e=>{ if(e.key==='Enter') doRename(); });
 }
 
 function checkEvo(){
@@ -640,10 +760,28 @@ function checkEvo(){
     if(cur>prev){
       cat.si=cur;changed=true;
       const st=STG[cur];
-      notify(cat.name+' が「'+st.n+'」に進化した！'+st.e);
-      catType(isNyao(cat)?cat.name+'「進化したのじゃ！'+st.e+' '+st.n+' になったにゃ！✨」':cat.name+' が '+st.e+' に進化したにゃ！✨',400,cat.name);
-      confetti();
-      if(st.n==='にゃおうさま')checkTravel(cat);
+
+      if(st.n==='にゃおうさま'){
+        // にゃおうさまは自動で「にゃおうキックス」に改名
+        const oldName=cat.name;
+        cat.name='にゃおうキックス';
+        notify(oldName+' が「にゃおうさま」に進化した！👑');
+        catType('にゃおうキックス「ついに覚醒したのじゃ！👑 にゃおうキックスと呼ぶのじゃ！✨」',400,'にゃおうキックス');
+        confetti();
+        checkTravel(cat);
+      } else if(st.n==='ねこ'){
+        // ねこ進化時は名前変更UI
+        notify(cat.name+' が「ねこ」に進化した！😺');
+        catType(cat.name+' が 😺 に進化したにゃ！✨',400,cat.name);
+        confetti();
+        const evocat=cat;
+        setTimeout(()=>showRenameUI(evocat),2500);
+      } else {
+        // その他（こねこ等）は通知のみ
+        notify(cat.name+' が「'+st.n+'」に進化した！'+st.e);
+        catType(cat.name+' が '+st.e+' に進化したにゃ！✨',400,cat.name);
+        confetti();
+      }
     }
   });
   if(changed)save();
@@ -1163,7 +1301,7 @@ function renderMsgs(){
 
     if(!isMe){
       const sn=document.createElement('div');sn.className='mn';
-      if(isT) sn.textContent=(m.catName||'にゃおうさま')+' ✈️';
+      if(isT) sn.textContent=(m.catName||'にゃおうキックス')+' ✈️';
       else if(isCat) sn.textContent=m.catName||(cats[0]?.name||'ねこ');
       else sn.textContent=m.s;
       inner.appendChild(sn);
