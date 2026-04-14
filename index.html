@@ -1038,7 +1038,7 @@ function updStats(text){
       state.love=Math.max(0,state.love-1);
     }
   }
-  state.happy=Math.min(100,Math.max(0,state.happy+sc+(text.length>10?1:0)));
+  state.happy=Math.min(100,Math.max(0,state.happy+(sc>0?1:sc<0?sc:0)));
   state.msgCount++;
   state.lastMsg=Date.now();
   state.decayDay1Applied=false;
@@ -1147,8 +1147,8 @@ function catCmt(text){
       return {cat:speaker, text:r(NYAN)};
     }
 
-    // 通常時：50%にゃ、30%シャー、15%無視、5%ウー
-    if(n<0.50) return {cat:speaker, text:r(NYAN)};
+    // 通常時：55%にゃ、25%シャー、15%無視、5%ウー
+    if(n<0.55) return {cat:speaker, text:r(NYAN)};
     if(n<0.80){
       state.happy=Math.max(0,state.happy-5);
       state.love=Math.max(0,state.love-7);
@@ -1170,7 +1170,7 @@ function catCmt(text){
       praiseCount=0;
       const speaker=cats.find(c=>!c.traveling)||cats[0];
       if(speaker){
-        state.happy=Math.min(100,state.happy+3);
+        state.happy=Math.min(100,state.happy+5);
         save();updateHouse();
         setTimeout(()=>catType(r(KOROKORO),1400,speaker.name),0);
         setTimeout(()=>catType(r(KOROKORO),2900,speaker.name),0);
@@ -1405,7 +1405,9 @@ function renderCats(){
     const ca=document.createElement('div');ca.className='ca';ca.textContent=days+'日め';
     card.appendChild(ce);card.appendChild(cn);card.appendChild(cs);card.appendChild(ca);
     card.addEventListener('click',()=>{
-      state.happy=Math.min(100,state.happy+2);state.petCount=(state.petCount||0)+1;save();updateHouse();
+      state.petCount=(state.petCount||0)+1;
+      if(state.petCount%5===0) state.happy=Math.min(100,state.happy+1);
+      save();updateHouse();
       const rc=card.getBoundingClientRect();spawnR(rc.left+rc.width/2,rc.top+rc.height/2,r(['💕','✨','🐾','💖','😻']));
       if(state.petCount%5===0){const nc=isNyao(cat)?cat.name+'「なでなでしてくれるのじゃ！嬉しいのじゃ💕」':cat.name+'「にゃ～！💕」';catType(nc,300,cat.name);}
     });
@@ -1657,10 +1659,10 @@ function endNekoGame(escaped){
     document.getElementById('ngResultIcon').textContent='🎉';
     if(ngPractice){
       // 練習モード：love+1のみ
-      state.love=Math.min(100,state.love+1);
+      state.love=Math.min(100,state.love+2);
       save();updateHouse();
       document.getElementById('ngResultMsg').textContent='練習クリア！';
-      document.getElementById('ngResultSub').textContent='なかよし+1にゃ🐾\n本番でチュールを復活させよう！';
+      document.getElementById('ngResultSub').textContent='なかよし+2にゃ🐾\n本番でチュールを復活させよう！';
     } else {
       // 本番モード：チュール復活＋love+1
       state.love=Math.min(100,state.love+1);
