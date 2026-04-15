@@ -948,8 +948,8 @@ function giveChuru(){
   const type=rollChuruType();
   if(isBonus) state.churuBonusUsed=true; // ボーナス使用フラグを先にセット
   state.lastChuruTs=Date.now();
-  state.happy=Math.min(100,state.happy+15);
-  state.love=Math.min(100,state.love+5);
+  state.happy=Math.min(100,state.happy+10);
+  state.love=Math.min(100,state.love+10);
   const btn=document.getElementById('chb');
   btn.classList.add('chura');setTimeout(()=>btn.classList.remove('chura'),500);
   const cat=cats.find(c=>!c.traveling)||cats[0];
@@ -1555,11 +1555,16 @@ function enterApp(onReady){
     }
     if(onReady){ onReady(); }
     else {
-      const g=['にゃ！きてくれた！🐾','おかえり！まってたにゃ💕','こんにちは！なでて🐱'];
+      const g=[
+        'にゃーん！にゃにゃにゃ！！きてくれたにゃ～！！🐾💕 にゃにゃにゃにゃ～！！ごろごろごろ…',
+        'みゃ！みゃみゃみゃ！おかえりにゃ～💕 ごろごろごろごろ…にゃにゃにゃ！！🐾',
+        'にゃ！にゃにゃ！まってたにゃ～！！ふにゃふにゃにゃ～！！にゃにゃにゃにゃ！🐾✨',
+        'ぷにゃ～！にゃにゃにゃにゃ！きたにゃ～！！ごろごろごろ…にゃにゃ！💕🐾',
+      ];
       const nyao=cats.find(c=>isNyao(c));
       const vis=msgs.filter(m=>m.ts>Date.now()-T3D);
-      if(!vis.length)catType('にゃ！ようこそ '+myName+' ちゃん🐾\nここはふたりだけのひみつのおうちだよ！\n毎日チュールをあげてね🐟',800,cats[0]?.name);
-      else if(nyao)catType(nyao.name+'「'+myName+'よ、よう来たのじゃ💕」',600,nyao.name);
+      if(!vis.length)catType('にゃーん！！にゃにゃにゃ～！！'+myName+'ちゃん、きてくれたにゃ～！！🐾\nごろごろごろ…にゃにゃにゃ！！ふたりだけのひみつのおうちへようこそにゃ！💕\nまいにちチュールをあげるにゃ！🐟にゃにゃにゃ～！！',800,cats[0]?.name);
+      else if(nyao)catType(nyao.name+'「にゃおうにゃおう！！'+myName+'よ、よう来たのじゃ～！💕 うむうむ、ごろごろごろ…待っておったのじゃ！にゃおうにゃおう！！👑」',600,nyao.name);
       else catType(r(g),600,cats[0]?.name);
     }
     startRealtimeSync();
