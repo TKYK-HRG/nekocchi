@@ -1403,7 +1403,32 @@ function renderCats(){
     const cn=document.createElement('div');cn.className='cn';cn.textContent=cat.name;
     const cs=document.createElement('div');cs.className='cs';cs.textContent=st.n;
     const ca=document.createElement('div');ca.className='ca';ca.textContent=days+'日め';
-    card.appendChild(ce);card.appendChild(cn);card.appendChild(cs);card.appendChild(ca);
+
+    // 次の進化までの残り時間
+    const nextStIdx=STG.indexOf(st)+1;
+    const cev=document.createElement('div');cev.className='ca';
+    if(cat.traveling){
+      cev.textContent='✈️ 旅中';
+    } else if(nextStIdx<STG.length){
+      const nextSt=STG[nextStIdx];
+      const age=boostedAge(cat);
+      const remainDays=nextSt.d-age;
+      if(remainDays<=0){
+        cev.textContent='もうすぐ進化！✨';
+        cev.style.color='var(--accent)';
+      } else if(remainDays<1){
+        const remainH=Math.ceil(remainDays*24);
+        cev.textContent='進化まで'+remainH+'時間';
+      } else {
+        const remainD=Math.floor(remainDays);
+        const remainH=Math.ceil((remainDays-remainD)*24);
+        cev.textContent='進化まで'+remainD+'日'+(remainH>0?remainH+'時間':'');
+      }
+    } else {
+      cev.textContent='👑 最終進化';
+      cev.style.color='var(--gold)';
+    }
+    card.appendChild(ce);card.appendChild(cn);card.appendChild(cs);card.appendChild(ca);card.appendChild(cev);
     card.addEventListener('click',()=>{
       state.petCount=(state.petCount||0)+1;
       if(state.petCount%5===0) state.happy=Math.min(100,state.happy+1);
