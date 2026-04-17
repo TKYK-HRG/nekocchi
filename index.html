@@ -608,9 +608,43 @@ function startRealtimeSync(){
     state.jarashiPlayed=ns.jarashiPlayed??state.jarashiPlayed;
     state.lastMsg=ns.lastMsg??state.lastMsg;
     // decayDay系はローカル判定のため上書きしない
+    // 進化通知キューをチェック
+    if(ns.evoQueue) checkEvoQueue(ns.evoQueue);
     if(curTab==='H') updateHouse();
-    else checkNeglect(); // タブに関わらず警告を更新
+    else checkNeglect();
   });
+}
+
+// 進化通知キュー処理
+function checkEvoQueue(queue){
+  if(!queue||!myName)return;
+  queue.forEach((ev,idx)=>{
+    // 自分がまだ見ていない通知だけ処理
+    if(ev.seen&&ev.seen.includes(myName))return;
+    // 対応する猫を探す
+    const cat=cats.find(c=>c.id===ev.catId);
+    if(!cat)return;
+    // 既読マーク
+    if(!state.evoQueue)state.evoQueue=[];
+    if(!state.evoQueue[idx])state.evoQueue[idx]=ev;
+    if(!state.evoQueue[idx].seen)state.evoQueue[idx].seen=[];
+    if(!state.evoQueue[idx].seen.includes(myName)){
+      state.evoQueue[idx].seen.push(myName);
+      save();
+    }
+    // 通知＋名前変更UI表示
+    notify(cat.name+' が「'+ev.stName+'」に進化したにゃ！'+ev.stEmoji);
+    confetti();
+    setTimeout(()=>showRenameUI(cat),1000);
+  });
+  // 全員が見た通知は削除
+  const users=window._cachedUsers||[];
+  if(state.evoQueue){
+    state.evoQueue=state.evoQueue.filter(ev=>
+      !ev.seen||ev.seen.length<users.length||
+      (Date.now()-ev.ts)<7*24*60*60*1000 // 7日以上古いものも削除
+    );
+  }
 }
 
 // Boost stored in Firebase too
@@ -770,10 +804,13 @@ function checkEvo(){
         confetti();
         checkTravel(cat);
       } else if(st.n==='ねこ'){
-        // ねこ進化時は名前変更UI
+        // ねこ進化時は名前変更UI＋通知キューに積む
         notify(cat.name+' が「ねこ」に進化した！😺');
         catType(cat.name+' が 😺 に進化したにゃ！✨',400,cat.name);
         confetti();
+        // 進化通知をキューに積む（両ユーザーが見られるように）
+        if(!state.evoQueue) state.evoQueue=[];
+        state.evoQueue.push({catId:cat.id,catName:cat.name,stName:st.n,stEmoji:st.e,ts:Date.now(),seen:[]});
         const evocat=cat;
         setTimeout(()=>showRenameUI(evocat),2500);
       } else {
@@ -1567,6 +1604,8 @@ function enterApp(onReady){
   document.getElementById('hi').textContent='🐾 よみこみちゅう…';
   load(()=>{
     updateHouse();renderMsgs();updateAlbum();updateBadges();checkEvo();checkNeglect();
+    // ログイン時に未確認の進化通知をチェック
+    if(state.evoQueue&&state.evoQueue.length>0) checkEvoQueue(state.evoQueue);
     // ログイン時に放置分を計算（ただし1時間以内なら不要）
     if(Date.now()-state.lastMsg > 60*60*1000) applyDecay();
     // ロック画面アイコンを現在の猫に更新
