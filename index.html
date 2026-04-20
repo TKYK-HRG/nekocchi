@@ -992,9 +992,9 @@ function giveChuru(){
   const cat=cats.find(c=>!c.traveling)||cats[0];
   const cn=cat?cat.name:'ねこ';
   if(type==='gold'){
-    const boost={type:'gold',until:Date.now()+3*DMS};
+    const boost={type:'gold',until:Date.now()+1.5*DMS};
     setBoost(boost);window._lastBoost=boost;
-    notify('✨ 金チュール！ 3日間成長2倍速！');
+    notify('✨ 金チュール！ 1.5日間成長2倍速！');
     const m={s:'__CH__',catName:cn,ctype:'gold',ts:Date.now()};
     knownMsgKeys.add(m.ts+'_'+m.s);
     msgs.push(m);pushMsg(m);
@@ -1363,7 +1363,7 @@ function renderMsgs(){
     } else if(isCH){
       const ct=m.ctype;
       const s=document.createElement('span');
-      if(ct==='gold') s.textContent='✨ 金チュールもらったにゃ！3日間成長2倍速！👑';
+      if(ct==='gold') s.textContent='✨ 金チュールもらったにゃ！1.5日間成長2倍速！👑';
       else if(ct==='silver') s.textContent='🌸 銀チュールもらったにゃ！1日間成長1.5倍速！';
       else s.textContent='🐟 チュールもらったにゃ！きぶん+15💕';
       bub.appendChild(s);
