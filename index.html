@@ -1151,9 +1151,17 @@ const NYAO_JP={
 
 let localMsgCount=0;
 
+// にゃおうキックスのニックネーム
+const NYAOU_NICKNAMES=['にゃおうキックス','にゃおう','キックス','きくえもん'];
+
 // 名前を呼ばれたか判定
 function containsCatName(text){
-  return cats.some(c=>c&&c.name&&text.includes(c.name));
+  // 通常の猫名
+  if(cats.some(c=>c&&c.name&&text.includes(c.name))) return true;
+  // にゃおうキックスのニックネーム（にゃおうさまステージの猫がいる場合）
+  const nyao=cats.find(c=>isNyao(c));
+  if(nyao) return NYAOU_NICKNAMES.some(n=>text.includes(n));
+  return false;
 }
 
 let praiseCount=0; // 褒め言葉カウンター
@@ -1162,7 +1170,9 @@ function catCmt(text){
   // 名前を呼ばれた場合を最優先（褒め言葉より先に判定）
   if(containsCatName(text)){
     const n=Math.random();
-    const speaker=cats.find(c=>text.includes(c.name)&&!c.traveling)||cats[0];
+    const speaker=cats.find(c=>c&&c.name&&text.includes(c.name)&&!c.traveling)
+      || (cats.find(c=>isNyao(c)&&!c.traveling&&NYAOU_NICKNAMES.some(n=>text.includes(n))))
+      || cats[0];
     if(!speaker) return null;
 
     const shaaRecent=(Date.now()-shaaTs)<10000;
