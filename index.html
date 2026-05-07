@@ -217,6 +217,63 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
 .name-input-row input{flex:1;padding:8px 12px;border-radius:999px;border:2px solid #FFD4B8;background:#fff;font-family:inherit;font-size:14px;color:var(--dark);outline:none;}
 .name-input-row input:focus{border-color:var(--accent);}
 .name-input-row button{padding:8px 16px;border-radius:999px;background:var(--accent);color:#fff;border:none;font-family:inherit;font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;}
+/* BILLIARDS GAME */
+#billiardsGame{position:fixed;inset:0;z-index:50;background:linear-gradient(160deg,#1a1a2e,#16213e);display:none;flex-direction:column;align-items:center;overflow:hidden;}
+#billiardsGame.show{display:flex;}
+.bg-header{width:100%;padding:14px 20px 8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.bg-title{font-size:15px;font-weight:900;color:#fff;}
+.bg-close{background:none;border:none;color:#fff;font-size:22px;cursor:pointer;padding:4px;}
+.bg-cat-area{
+  width:100%;padding:10px 20px;display:flex;align-items:center;justify-content:center;
+  gap:12px;flex-shrink:0;
+}
+.bg-cat-face{font-size:40px;transition:transform .3s;}
+.bg-cat-status{
+  padding:6px 16px;border-radius:999px;font-size:13px;font-weight:700;
+  transition:background .3s,color .3s;
+}
+.bg-cat-status.watching{background:#FF4444;color:#fff;}
+.bg-cat-status.looking-away{background:#44CC44;color:#fff;}
+.bg-table{
+  flex:1;width:calc(100% - 32px);margin:0 16px;
+  background:#1a6b3a;border-radius:16px;
+  border:6px solid #8B4513;
+  position:relative;overflow:hidden;
+  box-shadow:inset 0 0 30px #00000040;
+}
+.bg-hole{
+  position:absolute;width:36px;height:36px;border-radius:50%;
+  background:#000;border:3px solid #333;
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;
+}
+.bg-ball{
+  position:absolute;width:34px;height:34px;border-radius:50%;
+  background:radial-gradient(circle at 35% 35%,#fff,#222);
+  cursor:grab;user-select:none;
+  box-shadow:0 4px 12px #00000060;
+  display:flex;align-items:center;justify-content:center;
+  font-size:18px;
+  transition:none;
+}
+.bg-ball.moving{cursor:default;pointer-events:none;}
+.bg-arrow{
+  position:absolute;pointer-events:none;
+  transform-origin:left center;
+  height:3px;background:rgba(255,255,100,0.8);
+  border-radius:2px;
+  display:none;
+}
+.bg-result{
+  position:absolute;inset:0;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;background:#000000CC;backdrop-filter:blur(4px);border-radius:10px;
+}
+.bg-result-icon{font-size:60px;}
+.bg-result-msg{font-size:20px;font-weight:900;color:#fff;}
+.bg-result-sub{font-size:13px;color:#CCC;text-align:center;line-height:1.8;}
+.bg-result-btn{padding:10px 28px;border-radius:999px;background:#9B8EC4;color:#fff;border:none;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;margin-top:4px;}
+.bg-hint{font-size:11px;color:#AAA;text-align:center;padding:6px;flex-shrink:0;}
 </style>
 </head>
 <body>
@@ -273,6 +330,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
         <div class="chs" id="chs">きょうのぶん、まだあるよ！</div>
         <button class="jarashi-btn" id="jarashiBtn">🎋 あそぶ</button>
         <button class="jarashi-btn" id="jarashiPracticeBtn" style="background:linear-gradient(135deg,#B0C4DE,#89A8C8);">🎋 練習</button>
+        <button class="jarashi-btn" id="billiardsBtn" style="background:linear-gradient(135deg,#9B8EC4,#7B6EA4);">🎱 ビリヤード</button>
       </div>
       <div id="boostBanner" style="display:none"></div>
       <div class="cg" id="cg"></div>
@@ -351,6 +409,34 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
       <div class="ng-result-msg" id="ngResultMsg"></div>
       <div class="ng-result-sub" id="ngResultSub"></div>
       <button class="ng-result-btn" id="ngResultBtn">とじる</button>
+    </div>
+  </div>
+</div>
+<!-- BILLIARDS GAME -->
+<div id="billiardsGame">
+  <div class="bg-header">
+    <div class="bg-title">🎱 ビリヤード</div>
+    <button class="bg-close" id="bgClose">✕</button>
+  </div>
+  <div class="bg-cat-area">
+    <div class="bg-cat-face" id="bgCatFace">😼</div>
+    <div class="bg-cat-status watching" id="bgCatStatus">👀 みてる</div>
+  </div>
+  <div class="bg-hint">よそ見中🟢にドラッグしてシュート！</div>
+  <div class="bg-table" id="bgTable">
+    <div class="bg-hole" id="bgHole1" style="top:8%;left:5%">🕳️</div>
+    <div class="bg-hole" id="bgHole2" style="top:8%;right:5%">🕳️</div>
+    <div class="bg-hole" id="bgHole3" style="top:47%;left:2%">🕳️</div>
+    <div class="bg-hole" id="bgHole4" style="top:47%;right:2%">🕳️</div>
+    <div class="bg-hole" id="bgHole5" style="bottom:8%;left:5%">🕳️</div>
+    <div class="bg-hole" id="bgHole6" style="bottom:8%;right:5%">🕳️</div>
+    <div class="bg-ball" id="bgBall">🎱</div>
+    <div class="bg-arrow" id="bgArrow"></div>
+    <div class="bg-result" id="bgResult" style="display:none;">
+      <div class="bg-result-icon" id="bgResultIcon"></div>
+      <div class="bg-result-msg" id="bgResultMsg"></div>
+      <div class="bg-result-sub" id="bgResultSub"></div>
+      <button class="bg-result-btn" id="bgResultBtn">もう一度</button>
     </div>
   </div>
 </div>
@@ -1646,6 +1732,8 @@ function enterApp(onReady){
     startRealtimeSync();
     startPresence();
     initGameListeners();
+    initBilliardsListeners();
+    updateBilliardsBtn();
     setInterval(updateChuruBtn,60000);
     setInterval(()=>{applyBoostTick();checkEvo();if(curTab==='H')updateHouse();},60000);
     setInterval(()=>{applyDecay();checkNeglect();},60*60*1000); // 1時間ごと
@@ -1763,7 +1851,7 @@ function endNekoGame(escaped){
   }
 }
 
-// ══ GAME EVENT LISTENERS（安全にラップ）══
+document.getElementById('enterBtn').addEventListener('click',tryEnter);
 function initGameListeners(){
   const arena=document.getElementById('ngArena');
   if(!arena)return;
@@ -1794,7 +1882,270 @@ function initGameListeners(){
   if(practiceBtn) practiceBtn.addEventListener('click',()=>startNekoGame(true));
 }
 
-document.getElementById('enterBtn').addEventListener('click',tryEnter);
+// ══ BILLIARDS GAME ══
+const BG_KEY='nk3_billiards';
+let bgCatWatching=true;
+let bgCatTimer=null;
+let bgDragging=false;
+let bgDragStart={x:0,y:0};
+let bgBallPos={x:50,y:70}; // % of table
+let bgBallMoving=false;
+let bgSuccess=false;
+
+function billiardsPlayedToday(){
+  try{ return localStorage.getItem(BG_KEY)===todayKey(); }catch(e){return false;}
+}
+function billiardsSetPlayed(){
+  try{ localStorage.setItem(BG_KEY,todayKey()); }catch(e){}
+}
+
+function updateBilliardsBtn(){
+  const btn=document.getElementById('billiardsBtn');
+  if(!btn)return;
+  if(billiardsPlayedToday()&&bgSuccess){
+    btn.disabled=true;btn.textContent='🎱 またあした';
+  } else {
+    btn.disabled=false;btn.textContent='🎱 ビリヤード';
+  }
+}
+
+function startBilliards(){
+  bgSuccess=false;
+  bgBallMoving=false;
+  bgDragging=false;
+  document.getElementById('billiardsGame').classList.add('show');
+  document.getElementById('bgResult').style.display='none';
+  resetBall();
+  startCatBehavior();
+}
+
+function resetBall(){
+  bgBallPos={x:50,y:65};
+  const ball=document.getElementById('bgBall');
+  ball.style.left=bgBallPos.x+'%';
+  ball.style.top=bgBallPos.y+'%';
+  ball.style.transform='translate(-50%,-50%)';
+  ball.classList.remove('moving');
+  document.getElementById('bgArrow').style.display='none';
+}
+
+function startCatBehavior(){
+  if(bgCatTimer) clearTimeout(bgCatTimer);
+  scheduleCatBehavior();
+}
+
+function scheduleCatBehavior(){
+  // ランダムな間隔で見る/よそ見を切り替え
+  const delay=bgCatWatching
+    ? (2000+Math.random()*4000)  // 見てる：2〜6秒
+    : (1500+Math.random()*3500); // よそ見：1.5〜5秒
+  bgCatTimer=setTimeout(()=>{
+    bgCatWatching=!bgCatWatching;
+    updateCatUI();
+    scheduleCatBehavior();
+  },delay);
+}
+
+function updateCatUI(){
+  const face=document.getElementById('bgCatFace');
+  const status=document.getElementById('bgCatStatus');
+  if(bgCatWatching){
+    face.textContent='😼';face.style.transform='scale(1)';
+    status.textContent='👀 みてる';
+    status.className='bg-cat-status watching';
+  } else {
+    face.textContent='😸';face.style.transform='scale(1.1) rotate(-20deg)';
+    status.textContent='👉 よそみ中！';
+    status.className='bg-cat-status looking-away';
+  }
+}
+
+function endBilliards(won){
+  if(bgCatTimer){ clearTimeout(bgCatTimer); bgCatTimer=null; }
+  bgBallMoving=false;
+  const result=document.getElementById('bgResult');
+  result.style.display='flex';
+  const btn=document.getElementById('bgResultBtn');
+
+  if(won){
+    bgSuccess=true;
+    billiardsSetPlayed();
+    document.getElementById('bgResultIcon').textContent='🎉';
+    document.getElementById('bgResultMsg').textContent='ナイスショット！';
+    document.getElementById('bgResultSub').textContent='チュールが復活したにゃ🐟\n猫の目を盗んだにゃ！';
+    state.lastChuruTs=0;state.churuBonusUsed=false;
+    save();updateChuruBtn();
+    confetti();
+    btn.textContent='とじる';
+  } else {
+    document.getElementById('bgResultIcon').textContent='😹';
+    document.getElementById('bgResultMsg').textContent='みられた！';
+    document.getElementById('bgResultSub').textContent='猫に見られちゃったにゃ…\nもう一度チャレンジ！';
+    btn.textContent='もう一度';
+  }
+  btn.onclick=()=>{
+    if(won){
+      document.getElementById('billiardsGame').classList.remove('show');
+      updateBilliardsBtn();
+    } else {
+      document.getElementById('bgResult').style.display='none';
+      resetBall();
+      startCatBehavior();
+    }
+  };
+}
+
+function shootBall(dx,dy){
+  if(bgBallMoving)return;
+  // 猫が見てたら失敗
+  if(bgCatWatching){ endBilliards(false); return; }
+  bgBallMoving=true;
+  const ball=document.getElementById('bgBall');
+  ball.classList.add('moving');
+  document.getElementById('bgArrow').style.display='none';
+  const table=document.getElementById('bgTable');
+  const tw=table.clientWidth,th=table.clientHeight;
+
+  let bx=bgBallPos.x/100*tw;
+  let by=bgBallPos.y/100*th;
+  const speed=18;
+  const len=Math.sqrt(dx*dx+dy*dy)||1;
+  let vx=dx/len*speed, vy=dy/len*speed;
+
+  let steps=0;
+  const MAX_STEPS=120;
+  const BALL_R=17;
+
+  const animate=()=>{
+    if(!bgBallMoving)return;
+    bx+=vx; by+=vy;
+    steps++;
+
+    // 壁反射
+    if(bx<BALL_R){bx=BALL_R;vx=Math.abs(vx);}
+    if(bx>tw-BALL_R){bx=tw-BALL_R;vx=-Math.abs(vx);}
+    if(by<BALL_R){by=BALL_R;vy=Math.abs(vy);}
+    if(by>th-BALL_R){by=th-BALL_R;vy=-Math.abs(vy);}
+
+    // 減速
+    vx*=0.985; vy*=0.985;
+
+    ball.style.left=(bx/tw*100)+'%';
+    ball.style.top=(by/th*100)+'%';
+
+    // 穴チェック
+    const holes=document.querySelectorAll('.bg-hole');
+    for(const hole of holes){
+      const hr=hole.getBoundingClientRect();
+      const tr=table.getBoundingClientRect();
+      const hx=hr.left-tr.left+hr.width/2;
+      const hy=hr.top-tr.top+hr.height/2;
+      const dist=Math.sqrt((bx-hx)**2+(by-hy)**2);
+      if(dist<20){
+        // 入った！
+        ball.style.transform='translate(-50%,-50%) scale(0)';
+        ball.style.transition='transform 0.3s';
+        bgBallPos={x:bx/tw*100,y:by/th*100};
+        bgBallMoving=false;
+        setTimeout(()=>endBilliards(true),400);
+        return;
+      }
+    }
+
+    // 停止判定
+    if(steps>MAX_STEPS||( Math.abs(vx)<0.3&&Math.abs(vy)<0.3)){
+      bgBallMoving=false;bgBallPos={x:bx/tw*100,y:by/th*100};
+      ball.classList.remove('moving');
+      return;
+    }
+    requestAnimationFrame(animate);
+  };
+  requestAnimationFrame(animate);
+}
+
+function initBilliardsListeners(){
+  const ball=document.getElementById('bgBall');
+  const arrow=document.getElementById('bgArrow');
+  const table=document.getElementById('bgTable');
+  if(!ball||!table)return;
+
+  const getTablePos=(clientX,clientY)=>{
+    const r=table.getBoundingClientRect();
+    return {x:clientX-r.left,y:clientY-r.top};
+  };
+
+  ball.addEventListener('touchstart',e=>{
+    if(bgBallMoving)return;
+    e.preventDefault();
+    bgDragging=true;
+    const t=e.touches[0];
+    const p=getTablePos(t.clientX,t.clientY);
+    bgDragStart=p;
+    arrow.style.display='block';
+  },{passive:false});
+
+  table.addEventListener('touchmove',e=>{
+    if(!bgDragging)return;
+    e.preventDefault();
+    const t=e.touches[0];
+    const p=getTablePos(t.clientX,t.clientY);
+    const dx=bgDragStart.x-p.x, dy=bgDragStart.y-p.y;
+    const len=Math.sqrt(dx*dx+dy*dy);
+    const tw=table.clientWidth,th=table.clientHeight;
+    const bx=bgBallPos.x/100*tw, by=bgBallPos.y/100*th;
+    const angle=Math.atan2(dy,dx)*180/Math.PI;
+    arrow.style.left=bx+'px';
+    arrow.style.top=by+'px';
+    arrow.style.width=Math.min(len,80)+'px';
+    arrow.style.transform=`translate(-50%,-50%) rotate(${angle}deg)`;
+  },{passive:false});
+
+  table.addEventListener('touchend',e=>{
+    if(!bgDragging)return;
+    bgDragging=false;
+    arrow.style.display='none';
+    const t=e.changedTouches[0];
+    const p=getTablePos(t.clientX,t.clientY);
+    const dx=bgDragStart.x-p.x, dy=bgDragStart.y-p.y;
+    if(Math.sqrt(dx*dx+dy*dy)<5)return;
+    shootBall(dx,dy);
+  });
+
+  // マウス対応（PC）
+  ball.addEventListener('mousedown',e=>{
+    if(bgBallMoving)return;
+    bgDragging=true;
+    bgDragStart=getTablePos(e.clientX,e.clientY);
+    arrow.style.display='block';
+  });
+  table.addEventListener('mousemove',e=>{
+    if(!bgDragging)return;
+    const p=getTablePos(e.clientX,e.clientY);
+    const dx=bgDragStart.x-p.x,dy=bgDragStart.y-p.y;
+    const len=Math.sqrt(dx*dx+dy*dy);
+    const tw=table.clientWidth,th=table.clientHeight;
+    const bx=bgBallPos.x/100*tw,by=bgBallPos.y/100*th;
+    const angle=Math.atan2(dy,dx)*180/Math.PI;
+    arrow.style.left=bx+'px';arrow.style.top=by+'px';
+    arrow.style.width=Math.min(len,80)+'px';
+    arrow.style.transform=`translate(-50%,-50%) rotate(${angle}deg)`;
+  });
+  table.addEventListener('mouseup',e=>{
+    if(!bgDragging)return;
+    bgDragging=false;arrow.style.display='none';
+    const p=getTablePos(e.clientX,e.clientY);
+    const dx=bgDragStart.x-p.x,dy=bgDragStart.y-p.y;
+    if(Math.sqrt(dx*dx+dy*dy)<5)return;
+    shootBall(dx,dy);
+  });
+
+  document.getElementById('bgClose').addEventListener('click',()=>{
+    if(bgCatTimer){clearTimeout(bgCatTimer);bgCatTimer=null;}
+    bgBallMoving=false;bgDragging=false;
+    document.getElementById('billiardsGame').classList.remove('show');
+  });
+  document.getElementById('billiardsBtn').addEventListener('click',startBilliards);
+}
 document.getElementById('nin').addEventListener('keydown',e=>{if(e.key==='Enter')tryEnter();});
 
 // ══ RENAME ══
