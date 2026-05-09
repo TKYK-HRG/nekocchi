@@ -663,8 +663,18 @@ function startRealtimeSync(){
     if(!dbReady||!snap.val())return;
     const nc=Object.values(snap.val());
     if(JSON.stringify(nc)!==JSON.stringify(cats)){
+      const prevLen=cats.length;
       cats=nc;
       if(curTab==='H')renderCats();
+      // 猫が増えた＆たまごステージ＆未命名なら命名UIを表示
+      if(nc.length>prevLen){
+        const newEgg=nc.find(c=>stOf(c).n==='たまご'&&CNAMES.includes(c.name));
+        if(newEgg&&!document.getElementById('namingUI')){
+          notify('🥚 たまごが生まれた！名前をつけてにゃ！');
+          confetti();
+          setTimeout(()=>showNamingUI(newEgg),800);
+        }
+      }
     }
   });
 
