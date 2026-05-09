@@ -748,85 +748,70 @@ db.ref('nekotchi_boost').on('value',snap=>{ window._lastBoost=snap.val()||null; 
 
 function spawnCat(first){
   const defaultName=CNAMES[cats.length%CNAMES.length];
-  if(first){
-    // 初回は直接生成
-    cats.push({id:Date.now(),name:defaultName,born:Date.now(),si:0,traveling:false});
-    save();
-    return;
-  }
-  // 🥚生まれた通知＋名前入力UIをチャットに表示
+  const newCat={id:Date.now(),name:defaultName,born:Date.now(),si:0,traveling:false};
+  cats.push(newCat);
+  save();
+  if(first) return;
+  // 卵誕生通知
   notify('🥚 たまごが生まれた！名前をつけてにゃ！');
   confetti();
   updateHouse();
-  // チャットに名前入力UIを表示
-  setTimeout(()=>showNamingUI(defaultName),500);
+  // チャットに名前変更UIを表示
+  setTimeout(()=>showNamingUI(newCat),600);
 }
 
-function showNamingUI(defaultName){
-  const area=document.getElementById('cs');
-  if(!area)return;
-  const wrapId='naming_'+Date.now();
-  const wrap=document.createElement('div');wrap.id=wrapId;wrap.className='mr';
-  wrap.innerHTML=`
-    <div class="av">🥚</div>
-    <div class="mi2" style="max-width:80%">
-      <div class="mn">ねこっち</div>
-      <div class="name-input-wrap">
-        <div class="ni-label">🥚 たまごが生まれたにゃ！名前をつけてね</div>
-        <div class="name-input-row">
-          <input id="catNameInput" placeholder="${defaultName}" maxlength="6" autocomplete="off">
-          <button id="catNameBtn">決定</button>
-        </div>
-      </div>
-    </div>`;
-  area.appendChild(wrap);
-  area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
-
-  // タブをチャットに切り替え
-  if(curTab!=='C'){
-    document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
-    document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
-    document.querySelector('[data-tab="C"]').classList.add('active');
-    document.getElementById('pC').classList.add('active');
-    curTab='C';
-    chatU=0;updateBadges();
-    renderMsgs();
-    // UIを再追加（renderMsgsがinnerHTML=''するため）
-    setTimeout(()=>{
-      area.appendChild(wrap);
-      area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
-      setupNamingBtn(wrapId,defaultName);
-    },50);
-    return;
-  }
-  setupNamingBtn(wrapId,defaultName);
-}
-
-function setupNamingBtn(wrapId,defaultName){
-  const btn=document.getElementById('catNameBtn');
-  if(!btn)return;
-  btn.addEventListener('click',()=>{
-    const input=document.getElementById('catNameInput');
-    const name=(input?.value.trim())||defaultName;
-    commitCatName(name,wrapId);
-  });
-  const input=document.getElementById('catNameInput');
-  if(input) input.addEventListener('keydown',e=>{
-    if(e.key==='Enter'){
-      const name=(input.value.trim())||defaultName;
-      commitCatName(name,wrapId);
-    }
-  });
-}
-
-function commitCatName(name,wrapId){
-  cats.push({id:Date.now(),name,born:Date.now(),si:0,traveling:false});
-  save();
-  const el=document.getElementById(wrapId);
-  if(el)el.remove();
-  addMsg('__C__','🥚 '+name+' のたまごが生まれたにゃ！ようこそ！💕',CNAMES[0]);
-  updateHouse();
+function showNamingUI(cat){
+  // チャットタブに切り替え
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.querySelector('[data-tab="C"]').classList.add('active');
+  document.getElementById('pC').classList.add('active');
+  curTab='C'; chatU=0; updateBadges();
   renderMsgs();
+
+  // renderMsgs後に追加（上書きされないように少し遅らせる）
+  setTimeout(()=>{
+    const area=document.getElementById('cs');
+    if(!area)return;
+    // 既存の命名UIがあれば削除
+    const old=document.getElementById('namingUI');
+    if(old)old.remove();
+
+    const wrap=document.createElement('div');
+    wrap.id='namingUI';wrap.className='mr';
+    wrap.innerHTML=`
+      <div class="av">🥚</div>
+      <div class="mi2" style="max-width:80%">
+        <div class="mn">ねこっち</div>
+        <div class="name-input-wrap">
+          <div class="ni-label">🥚 たまごが生まれたにゃ！名前をつけてね（空欄で「${cat.name}」になるにゃ）</div>
+          <div class="name-input-row">
+            <input id="catNameInput" placeholder="${cat.name}" maxlength="6" autocomplete="off">
+            <button id="catNameBtn">決定</button>
+          </div>
+        </div>
+      </div>`;
+    area.appendChild(wrap);
+    area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
+
+    const doName=()=>{
+      const input=document.getElementById('catNameInput');
+      const newName=(input?.value.trim())||cat.name;
+      wrap.remove();
+      if(newName!==cat.name){
+        cat.name=newName;
+        save();
+        updateHouse();
+      }
+      addMsg('__C__','🥚 '+cat.name+' のたまごが生まれたにゃ！ようこそ！💕',cats[0]?.name);
+      renderMsgs();
+    };
+
+    document.getElementById('catNameBtn').addEventListener('click',doName);
+    document.getElementById('catNameInput').addEventListener('keydown',e=>{
+      if(e.key==='Enter') doName();
+    });
+  },100);
 }
 
 function showRenameUI(cat){
@@ -837,7 +822,7 @@ function showRenameUI(cat){
   const avHtml=st?.img
     ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
     :`<div class="av">${st.e}</div>`;
-  const wrap=document.createElement('div');wrap.id=wrapId;wrap.className='mr';
+  const wrap=document.createElement('div');wrap.id='renameUI';wrap.className='mr';
   wrap.innerHTML=`
     ${avHtml}
     <div class="mi2" style="max-width:80%">
@@ -1378,6 +1363,8 @@ function catType(text,delay,catName){
 function renderMsgs(){
   const area=document.getElementById('cs');
   if(!area)return;
+  // 命名UI・進化UIが表示中は再描画しない
+  if(document.getElementById('namingUI')||document.getElementById('renameUI')) return;
   area.innerHTML='';
   const cutoff=Date.now()-T3D;
   const hidden=msgs.filter(m=>m.ts<cutoff).length;
