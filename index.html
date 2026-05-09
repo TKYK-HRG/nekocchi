@@ -668,7 +668,7 @@ function startRealtimeSync(){
       if(curTab==='H')renderCats();
       // 猫が増えた＆たまごステージ＆未命名なら命名UIを表示
       if(nc.length>prevLen){
-        const newEgg=nc.find(c=>stOf(c).n==='たまご'&&CNAMES.includes(c.name));
+        const newEgg=nc.find(c=>stOf(c).n==='たまご'&&!c.named);
         if(newEgg&&!document.getElementById('namingUI')){
           notify('🥚 たまごが生まれた！名前をつけてにゃ！');
           confetti();
@@ -758,7 +758,7 @@ db.ref('nekotchi_boost').on('value',snap=>{ window._lastBoost=snap.val()||null; 
 
 function spawnCat(first){
   const defaultName=CNAMES[cats.length%CNAMES.length];
-  const newCat={id:Date.now(),name:defaultName,born:Date.now(),si:0,traveling:false};
+  const newCat={id:Date.now(),name:defaultName,born:Date.now(),si:0,traveling:false,named:false};
   cats.push(newCat);
   save();
   if(first) return;
@@ -808,11 +808,10 @@ function showNamingUI(cat){
       const input=document.getElementById('catNameInput');
       const newName=(input?.value.trim())||cat.name;
       wrap.remove();
-      if(newName!==cat.name){
-        cat.name=newName;
-        save();
-        updateHouse();
-      }
+      cat.name=newName;
+      cat.named=true; // 命名済みフラグ
+      save();
+      updateHouse();
       addMsg('__C__','🥚 '+cat.name+' のたまごが生まれたにゃ！ようこそ！💕',cats[0]?.name);
       renderMsgs();
     };
@@ -1702,7 +1701,7 @@ function enterApp(onReady){
     // ログイン時に放置分を計算（ただし1時間以内なら不要）
     if(Date.now()-state.lastMsg > 60*60*1000) applyDecay();
     // 名前未設定のたまごがあれば命名UIを表示
-    const unnamedEgg=cats.find(c=>stOf(c).n==='たまご'&&CNAMES.includes(c.name));
+    const unnamedEgg=cats.find(c=>stOf(c).n==='たまご'&&!c.named);
     if(unnamedEgg) setTimeout(()=>showNamingUI(unnamedEgg),1200);
     // ロック画面アイコンを現在の猫に更新
     const lockCat=cats[0];
