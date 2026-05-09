@@ -844,7 +844,7 @@ function showRenameUI(cat){
 
   const doRename=()=>{
     const newName=input.value.trim();
-    const el=document.getElementById(wrapId);
+    const el=document.getElementById('renameUI');
     if(el)el.remove();
     if(newName&&newName!==cat.name){
       const oldName=cat.name;
