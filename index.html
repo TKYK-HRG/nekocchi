@@ -403,7 +403,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
   <div class="ng-hint">画面をタップして逃げるにゃ！🐾</div>
   <div class="ng-arena" id="ngArena">
     <div class="ng-player" id="ngPlayer">🐭</div>
-    <div class="ng-hand" id="ngHand">🐾</div>
+    <div class="ng-hand" id="ngHand"><img src="https://TKYK-HRG.github.io/nekocchi/ochape.jpg" style="width:52px;height:52px;border-radius:50%;object-fit:cover;box-shadow:0 4px 12px #00000040;border:2px solid #fff;"></div>
     <div class="ng-result" id="ngResult" style="display:none;">
       <div class="ng-result-icon" id="ngResultIcon"></div>
       <div class="ng-result-msg" id="ngResultMsg"></div>
@@ -419,7 +419,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
     <button class="bg-close" id="bgClose">✕</button>
   </div>
   <div class="bg-cat-area">
-    <div class="bg-cat-face" id="bgCatFace">😼</div>
+    <div class="bg-cat-face" id="bgCatFace"><img src="https://TKYK-HRG.github.io/nekocchi/oban2.jpg" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid #fff;box-shadow:0 4px 12px #00000040;transition:transform .3s;"></div>
     <div class="bg-cat-status watching" id="bgCatStatus">👀 みてる</div>
   </div>
   <div class="bg-hint">よそ見中🟢にドラッグしてシュート！</div>
@@ -1058,12 +1058,28 @@ function churuBonusOK(){
 
 function rollChuruType(){const n=Math.random();if(n<0.10)return'gold';if(n<0.30)return'silver';return'normal';}
 
+function giveChuruCatReactions(type){
+  const homeCats=cats.filter(c=>!c.traveling);
+  if(!homeCats.length)return;
+  const cm=['ジョリジョリジョリジョリ…','ニャムニャムニャムニャム♥'];
+  homeCats.forEach((cat,i)=>{
+    const delay=400+(i*900);
+    if(type==='gold'){
+      catType(cat.name+'「ニャムニャムニャムニャム♥♥♥✨👑✨」',delay,cat.name);
+    }else if(type==='silver'){
+      catType(cat.name+'「ジョリジョリジョリジョリ…🌸」',delay,cat.name);
+    }else{
+      catType(cat.name+'「'+r(cm)+'」',delay,cat.name);
+    }
+  });
+}
+
 function giveChuru(){
   const isBonus=churuBonusOK();
   const ok=churuOK()||isBonus;
   if(!ok)return;
   const type=rollChuruType();
-  if(isBonus) state.churuBonusUsed=true; // ボーナス使用フラグを先にセット
+  if(isBonus) state.churuBonusUsed=true;
   state.lastChuruTs=Date.now();
   state.happy=Math.min(100,state.happy+10);
   state.love=Math.min(100,state.love+10);
@@ -1076,26 +1092,20 @@ function giveChuru(){
     setBoost(boost);window._lastBoost=boost;
     notify('✨ 金チュール！ 1.5日間成長2倍速！');
     const m={s:'__CH__',catName:cn,ctype:'gold',ts:Date.now()};
-    knownMsgKeys.add(m.ts+'_'+m.s);
-    msgs.push(m);pushMsg(m);
+    knownMsgKeys.add(m.ts+'_'+m.s);msgs.push(m);pushMsg(m);
     confetti();confetti();
-    catType(cn+'「ニャムニャムニャムニャム♥♥♥✨👑✨」',400,cn);
   }else if(type==='silver'){
     const boost={type:'silver',until:Date.now()+1*DMS};
     setBoost(boost);window._lastBoost=boost;
     notify('🌸 銀チュール！ 1日間成長1.5倍速！');
     const m={s:'__CH__',catName:cn,ctype:'silver',ts:Date.now()};
-    knownMsgKeys.add(m.ts+'_'+m.s);
-    msgs.push(m);pushMsg(m);
+    knownMsgKeys.add(m.ts+'_'+m.s);msgs.push(m);pushMsg(m);
     confetti();
-    catType(cn+'「ジョリジョリジョリジョリ…🌸」',400,cn);
   }else{
     const m={s:'__CH__',catName:cn,ctype:'normal',ts:Date.now()};
-    knownMsgKeys.add(m.ts+'_'+m.s);
-    msgs.push(m);pushMsg(m);
-    const cm=['ジョリジョリジョリジョリ…','ニャムニャムニャムニャム♥'];
-    catType(cn+'「'+r(cm)+'」',400,cn);
+    knownMsgKeys.add(m.ts+'_'+m.s);msgs.push(m);pushMsg(m);
   }
+  giveChuruCatReactions(type);
   saveState();renderMsgs();updateHouse();updateChuruBtn();
 }
 
@@ -1948,12 +1958,13 @@ function scheduleCatBehavior(){
 function updateCatUI(){
   const face=document.getElementById('bgCatFace');
   const status=document.getElementById('bgCatStatus');
+  const img=face.querySelector('img');
   if(bgCatWatching){
-    face.textContent='😼';face.style.transform='scale(1)';
+    if(img) img.style.transform='scale(1) rotate(0deg)';
     status.textContent='👀 みてる';
     status.className='bg-cat-status watching';
   } else {
-    face.textContent='😸';face.style.transform='scale(1.1) rotate(-20deg)';
+    if(img) img.style.transform='scale(1.1) rotate(-20deg)';
     status.textContent='👉 よそみ中！';
     status.className='bg-cat-status looking-away';
   }
