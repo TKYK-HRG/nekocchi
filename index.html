@@ -1721,6 +1721,7 @@ function tryEnter(){
   document.getElementById('lerr').textContent='つないでるにゃ…🐾';
   gu(u=>{
     window._cachedUsers=u;
+    document.getElementById('lerr').textContent='🐛 users:'+JSON.stringify(u)+' name:'+name;
     if(u.includes(name)){myName=name;enterApp();return;}
     if(u.length<2){
       const nu=[...u,name];su(nu);window._cachedUsers=nu;
