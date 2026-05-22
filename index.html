@@ -1270,54 +1270,30 @@ function containsCatName(text){
 let praiseCount=0; // 褒め言葉カウンター
 
 function catCmt(text){
-  // にゃおうおちゃぺは常にzzz...zzz...
+  // 名前を呼ばれた場合を最優先
   if(containsCatName(text)){
-    const speaker=cats.find(c=>text.includes(c.name)&&!c.traveling)
-      || (cats.find(c=>isNyao(c)&&!c.traveling&&NYAOU_NICKNAMES.some(n=>text.includes(n))))
-      || cats[0];
-    if(speaker&&speaker.name==='にゃおうおちゃぺ'){
-      return {cat:speaker, text:r(['zzz...zzz...💤','…zzz...💤','zzz...💤😴','…zzz...zzz...💤'])};
-    }
-  }
     const n=Math.random();
     const speaker=cats.find(c=>c&&c.name&&text.includes(c.name)&&!c.traveling)
-      || (cats.find(c=>c.name==='にゃおうキックス'&&!c.traveling&&NYAOU_NICKNAMES.some(n=>text.includes(n))))
-      || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&!c.traveling&&OCHAPE_NICKNAMES.some(n=>text.includes(n))))
+      || (cats.find(c=>c.name==='にゃおうキックス'&&!c.traveling&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
+      || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&!c.traveling&&OCHAPE_NICKNAMES.some(k=>text.includes(k))))
       || cats[0];
     if(!speaker) return null;
 
-    const shaaRecent=(Date.now()-shaaTs)<10000;
+    // にゃおうおちゃぺは常にzzz
+    if(speaker.name==='にゃおうおちゃぺ'){
+      return {cat:speaker, text:r(['zzz...zzz...💤','…zzz...💤','zzz...💤😴','…zzz...zzz...💤'])};
+    }
 
+    const shaaRecent=(Date.now()-shaaTs)<10000;
     if(shaaRecent){
-      if(n<0.60){
-        state.love=Math.max(0,state.love-10);
-        state.happy=Math.max(0,state.happy-10);
-        save();updateHouse();
-        return {cat:speaker, text:r(WUU)};
-      }
-      if(n<0.80){
-        state.happy=Math.max(0,state.happy-5);
-        state.love=Math.max(0,state.love-7);
-        shaaTs=Date.now();
-        save();updateHouse();
-        return {cat:speaker, text:r(SHAA)};
-      }
+      if(n<0.60){state.love=Math.max(0,state.love-10);state.happy=Math.max(0,state.happy-10);save();updateHouse();return {cat:speaker, text:r(WUU)};}
+      if(n<0.80){state.happy=Math.max(0,state.happy-5);state.love=Math.max(0,state.love-7);shaaTs=Date.now();save();updateHouse();return {cat:speaker, text:r(SHAA)};}
       return {cat:speaker, text:r(NYAN)};
     }
-
-    // 通常時：55%にゃ、25%シャー、15%無視、5%ウー
     if(n<0.55) return {cat:speaker, text:r(NYAN)};
-    if(n<0.80){
-      state.happy=Math.max(0,state.happy-5);
-      state.love=Math.max(0,state.love-7);
-      shaaTs=Date.now();
-      save();updateHouse();
-      return {cat:speaker, text:r(SHAA)};
-    }
-    if(n<0.95) return null; // 15%：無視
-    state.love=Math.max(0,state.love-10);
-    state.happy=Math.max(0,state.happy-10);
-    save();updateHouse();
+    if(n<0.80){state.happy=Math.max(0,state.happy-5);state.love=Math.max(0,state.love-7);shaaTs=Date.now();save();updateHouse();return {cat:speaker, text:r(SHAA)};}
+    if(n<0.95) return null;
+    state.love=Math.max(0,state.love-10);state.happy=Math.max(0,state.happy-10);save();updateHouse();
     return {cat:speaker, text:r(WUU)};
   }
 
@@ -1337,6 +1313,47 @@ function catCmt(text){
     }
     return null;
   }
+
+  // 通常：6回に1回
+  localMsgCount++;
+  if(localMsgCount % 6 !== 0) return null;
+
+  const nyao=cats.find(c=>isNyao(c)&&!c.traveling);
+  const normal=cats.find(c=>!c.traveling&&!isNyao(c));
+  const speaker=nyao||normal||cats[0];
+  if(!speaker) return null;
+
+  if(isNyao(speaker)){
+    const sc=senti(text,true),h=new Date().getHours();
+    let line;
+    if(sc>=3) line=r(NYAO_JP.pos);
+    else if(sc<=-1) line=r(NYAO_JP.neg);
+    else if(text.length>30) line=r(NYAO_JP.lon);
+    else if(text.length<5) line=r(NYAO_JP.shr);
+    else if(h>=21||h<=4) line=r(NYAO_JP.eve);
+    else if(h<=9) line=r(NYAO_JP.mor);
+    else line=r([...NYAO_JP.pos,...NYAO_JP.lon]);
+    return {cat:speaker, text:line};
+  } else {
+    return {cat:speaker, text:r(NYAN)};
+  }
+}
+
+  // 褒め言葉 → 3回カウントでころころ発動
+  if(containsPraise(text)){
+    praiseCount++;
+    if(praiseCount>=3){
+      praiseCount=0;
+      const speaker=cats.find(c=>!c.traveling)||cats[0];
+      if(speaker){
+        state.happy=Math.min(100,state.happy+5);
+        save();updateHouse();
+        setTimeout(()=>catType(r(KOROKORO),1400,speaker.name),0);
+        setTimeout(()=>catType(r(KOROKORO),2900,speaker.name),0);
+        return {cat:speaker, text:r(KOROKORO)};
+      }
+    }
+    return null;
 
   // 通常：6回に1回
   localMsgCount++;
