@@ -506,6 +506,12 @@ const STG=[
   {n:'ねこ',      e:'😺', d:5,    img:'https://TKYK-HRG.github.io/nekocchi/mike2.jpg'},
   {n:'にゃおうさま',e:'👑',d:10,  img:'https://TKYK-HRG.github.io/nekocchi/king.jpg'},
 ];
+// にゃおうおちゃぺ専用アイコン
+function catImg(cat){
+  const st=stOf(cat);
+  if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpeg';
+  return st.img||null;
+}
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
 const TNEG=DEMO?4*60*1000:4*24*60*60*1000; // 4日で逃げる
 const TTV=DEMO?15*1000:6*60*60*1000;
@@ -828,8 +834,8 @@ function showRenameUI(cat){
   if(!area)return;
   const st=stOf(cat);
   const wrapId='rename_'+Date.now();
-  const avHtml=st?.img
-    ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+  const avHtml=catImg(cat)
+    ?`<img src="${catImg(cat)}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
     :`<div class="av">${st.e}</div>`;
   const wrap=document.createElement('div');wrap.id='renameUI';wrap.className='mr';
   wrap.innerHTML=`
@@ -876,11 +882,17 @@ function checkEvo(){
       const st=STG[cur];
 
       if(st.n==='にゃおうさま'){
-        // にゃおうさまは自動で「にゃおうキックス」に改名
         const oldName=cat.name;
-        cat.name='にゃおうキックス';
+        // 1匹目→にゃおうキックス、2匹目以降→にゃおうおちゃぺ
+        const nyaoCount=cats.filter(c=>isNyao(c)).length;
+        const newName=nyaoCount<=1?'にゃおうキックス':'にゃおうおちゃぺ';
+        cat.name=newName;
         notify(oldName+' が「にゃおうさま」に進化した！👑');
-        catType('にゃおうキックス「ついに覚醒したのじゃ！👑 にゃおうキックスと呼ぶのじゃ！✨」',400,'にゃおうキックス');
+        if(newName==='にゃおうおちゃぺ'){
+          catType('にゃおうおちゃぺ「…zzz...zzz...👑💤」',400,'にゃおうおちゃぺ');
+        } else {
+          catType('にゃおうキックス「ついに覚醒したのじゃ！👑 にゃおうキックスと呼ぶのじゃ！✨」',400,'にゃおうキックス');
+        }
         confetti();
         checkTravel(cat);
       } else if(st.n==='ねこ'){
@@ -1243,25 +1255,34 @@ let localMsgCount=0;
 
 // にゃおうキックスのニックネーム
 const NYAOU_NICKNAMES=['にゃおうキックス','にゃおう','キックス','きくえもん'];
+const OCHAPE_NICKNAMES=['にゃおうおちゃぺ','おちゃぺ','チャペック'];
 
 // 名前を呼ばれたか判定
 function containsCatName(text){
-  // 通常の猫名
   if(cats.some(c=>c&&c.name&&text.includes(c.name))) return true;
-  // にゃおうキックスのニックネーム（にゃおうさまステージの猫がいる場合）
-  const nyao=cats.find(c=>isNyao(c));
+  const nyao=cats.find(c=>isNyao(c)&&c.name==='にゃおうキックス');
   if(nyao) return NYAOU_NICKNAMES.some(n=>text.includes(n));
+  const ochape=cats.find(c=>c.name==='にゃおうおちゃぺ');
+  if(ochape) return OCHAPE_NICKNAMES.some(n=>text.includes(n));
   return false;
 }
 
 let praiseCount=0; // 褒め言葉カウンター
 
 function catCmt(text){
-  // 名前を呼ばれた場合を最優先（褒め言葉より先に判定）
+  // にゃおうおちゃぺは常にzzz...zzz...
   if(containsCatName(text)){
+    const speaker=cats.find(c=>text.includes(c.name)&&!c.traveling)
+      || (cats.find(c=>isNyao(c)&&!c.traveling&&NYAOU_NICKNAMES.some(n=>text.includes(n))))
+      || cats[0];
+    if(speaker&&speaker.name==='にゃおうおちゃぺ'){
+      return {cat:speaker, text:r(['zzz...zzz...💤','…zzz...💤','zzz...💤😴','…zzz...zzz...💤'])};
+    }
+  }
     const n=Math.random();
     const speaker=cats.find(c=>c&&c.name&&text.includes(c.name)&&!c.traveling)
-      || (cats.find(c=>isNyao(c)&&!c.traveling&&NYAOU_NICKNAMES.some(n=>text.includes(n))))
+      || (cats.find(c=>c.name==='にゃおうキックス'&&!c.traveling&&NYAOU_NICKNAMES.some(n=>text.includes(n))))
+      || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&!c.traveling&&OCHAPE_NICKNAMES.some(n=>text.includes(n))))
       || cats[0];
     if(!speaker) return null;
 
@@ -1419,9 +1440,9 @@ function renderMsgs(){
     } else if(isCat){
       const tc=cats.find(c=>c.name===m.catName)||cats[0];
       if(tc){
-        const tst=stOf(tc);
-        if(tst.img) avImg=tst.img;
-        else { avEmoji=tst.e; avClass='av'; avText=true; }
+        const img=catImg(tc);
+        if(img) avImg=img;
+        else { avEmoji=stOf(tc).e; avClass='av'; avText=true; }
       } else { avEmoji='🐱'; avText=true; }
     } else {
       avEmoji='🐱'; avClass='av av-other'; avText=true; // 白猫
@@ -1531,9 +1552,9 @@ function renderCats(){
     if(cat.traveling){const b=document.createElement('div');b.className='tbdg';b.textContent='✈️旅中';card.appendChild(b);}
     if(st.n==='たまご'){const b=document.createElement('div');b.className='ebdg';b.textContent='🥚NEW';card.appendChild(b);}
     const ce=document.createElement(st.img?'img':'div');
-    if(st.img&&!cat.traveling){
+    if(catImg(cat)&&!cat.traveling){
       ce.className='ce-img';
-      ce.src=st.img;
+      ce.src=catImg(cat);
       ce.alt=st.n;
     } else {
       ce.className='ce';
