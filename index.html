@@ -508,7 +508,7 @@ const STG=[
 ];
 // にゃおうおちゃぺ専用アイコン
 function catImg(cat){
-  if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpeg';
+  if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpg';
   return stOf(cat).img||null;
 }
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
@@ -1248,14 +1248,15 @@ let localMsgCount=0;
 
 // にゃおうキックスのニックネーム
 const NYAOU_NICKNAMES=['にゃおうキックス','にゃおう','キックス','きくえもん'];
+const OCHAPE_NICKNAMES=['にゃおうおちゃぺ','チャペック'];
 
 // 名前を呼ばれたか判定
 function containsCatName(text){
-  // 通常の猫名
-  if(cats.some(c=>c&&c.name&&text.includes(c.name))) return true;
-  // にゃおうキックスのニックネーム（にゃおうさまステージの猫がいる場合）
-  const nyao=cats.find(c=>isNyao(c));
-  if(nyao) return NYAOU_NICKNAMES.some(n=>text.includes(n));
+  if(cats.some(c=>c&&c.name&&c.name!==myName&&text.includes(c.name))) return true;
+  const nyao=cats.find(c=>isNyao(c)&&c.name==='にゃおうキックス');
+  if(nyao&&NYAOU_NICKNAMES.some(n=>text.includes(n))) return true;
+  const ochape=cats.find(c=>c.name==='にゃおうおちゃぺ');
+  if(ochape&&OCHAPE_NICKNAMES.some(n=>text.includes(n))) return true;
   return false;
 }
 
@@ -1266,9 +1267,14 @@ function catCmt(text){
   if(containsCatName(text)){
     const n=Math.random();
     const speaker=cats.find(c=>c&&c.name&&text.includes(c.name)&&!c.traveling)
-      || (cats.find(c=>isNyao(c)&&!c.traveling&&NYAOU_NICKNAMES.some(n=>text.includes(n))))
+      || (cats.find(c=>isNyao(c)&&!c.traveling&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
       || cats[0];
     if(!speaker) return null;
+
+    // にゃおうおちゃぺは常にZzz
+    if(speaker.name==='にゃおうおちゃぺ'){
+      return {cat:speaker, text:r(['Zzz...Zzz...💤','…Zzz...💤','Zzz...💤😴','…Zzz...Zzz...💤'])};
+    }
 
     const shaaRecent=(Date.now()-shaaTs)<10000;
 
