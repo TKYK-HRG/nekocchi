@@ -506,6 +506,11 @@ const STG=[
   {n:'ねこ',      e:'😺', d:5,    img:'https://TKYK-HRG.github.io/nekocchi/mike2.jpg'},
   {n:'にゃおうさま',e:'👑',d:10,  img:'https://TKYK-HRG.github.io/nekocchi/king.jpg'},
 ];
+// にゃおうおちゃぺ専用アイコン
+function catImg(cat){
+  if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpeg';
+  return stOf(cat).img||null;
+}
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
 const TNEG=DEMO?4*60*1000:4*24*60*60*1000; // 4日で逃げる
 const TTV=DEMO?15*1000:6*60*60*1000;
@@ -829,7 +834,7 @@ function showRenameUI(cat){
   const st=stOf(cat);
   const wrapId='rename_'+Date.now();
   const avHtml=st?.img
-    ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+    ?`<img src="${catImg(cat)}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
     :`<div class="av">${st.e}</div>`;
   const wrap=document.createElement('div');wrap.id='renameUI';wrap.className='mr';
   wrap.innerHTML=`
@@ -1363,8 +1368,8 @@ function catType(text,delay,catName){
     const st=stOf(cat);
     const typId='typ_'+Date.now();
     const row=document.createElement('div');row.id=typId;row.className='mr';
-    const avHtml=st?.img
-      ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px #00000012;">`
+    const avHtml=catImg(cat)
+      ?`<img src="${catImg(cat)}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;box-shadow:0 2px 6px #00000012;">`
       :`<div class="av">${st?st.e:'🐱'}</div>`;
     row.innerHTML=`${avHtml}<div class="mi2"><div class="mn">${cat.name}</div><div class="bl bc"><div class="td"><span></span><span></span><span></span></div></div></div>`;
     area.appendChild(row);
@@ -1420,7 +1425,7 @@ function renderMsgs(){
       const tc=cats.find(c=>c.name===m.catName)||cats[0];
       if(tc){
         const tst=stOf(tc);
-        if(tst.img) avImg=tst.img;
+        const img=catImg(tc);if(img) avImg=img;
         else { avEmoji=tst.e; avClass='av'; avText=true; }
       } else { avEmoji='🐱'; avText=true; }
     } else {
@@ -1530,10 +1535,10 @@ function renderCats(){
     const card=document.createElement('div');card.className='cc';
     if(cat.traveling){const b=document.createElement('div');b.className='tbdg';b.textContent='✈️旅中';card.appendChild(b);}
     if(st.n==='たまご'){const b=document.createElement('div');b.className='ebdg';b.textContent='🥚NEW';card.appendChild(b);}
-    const ce=document.createElement(st.img?'img':'div');
-    if(st.img&&!cat.traveling){
+    const ce=document.createElement(catImg(cat)&&!cat.traveling?'img':'div');
+    if(catImg(cat)&&!cat.traveling){
       ce.className='ce-img';
-      ce.src=st.img;
+      ce.src=catImg(cat);
       ce.alt=st.n;
     } else {
       ce.className='ce';
