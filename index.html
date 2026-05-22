@@ -718,15 +718,15 @@ function startRealtimeSync(){
 }
 
 // 進化通知キュー処理
-function checkEvoQueue(queue){
-  if(!queue||!myName)return;
+function checkEvoQueue(queueRaw){
+  if(!queueRaw||!myName)return;
+  // Firebaseはarrayをobjectに変換するのでObject.valuesで戻す
+  const queue=Array.isArray(queueRaw)?queueRaw:Object.values(queueRaw);
   queue.forEach((ev,idx)=>{
-    // 自分がまだ見ていない通知だけ処理
+    if(!ev)return;
     if(ev.seen&&ev.seen.includes(myName))return;
-    // 対応する猫を探す
     const cat=cats.find(c=>c.id===ev.catId);
     if(!cat)return;
-    // 既読マーク
     if(!state.evoQueue)state.evoQueue=[];
     if(!state.evoQueue[idx])state.evoQueue[idx]=ev;
     if(!state.evoQueue[idx].seen)state.evoQueue[idx].seen=[];
@@ -734,17 +734,15 @@ function checkEvoQueue(queue){
       state.evoQueue[idx].seen.push(myName);
       save();
     }
-    // 通知＋名前変更UI表示
     notify(cat.name+' が「'+ev.stName+'」に進化したにゃ！'+ev.stEmoji);
     confetti();
     setTimeout(()=>showRenameUI(cat),1000);
   });
-  // 全員が見た通知は削除
+  // 全員が見た通知を削除
   const users=window._cachedUsers||[];
-  if(state.evoQueue){
+  if(state.evoQueue&&users.length>0){
     state.evoQueue=state.evoQueue.filter(ev=>
-      !ev.seen||ev.seen.length<users.length||
-      (Date.now()-ev.ts)<7*24*60*60*1000 // 7日以上古いものも削除
+      ev&&(!ev.seen||ev.seen.length<users.length)
     );
   }
 }
@@ -1255,11 +1253,12 @@ let localMsgCount=0;
 
 // にゃおうキックスのニックネーム
 const NYAOU_NICKNAMES=['にゃおうキックス','にゃおう','キックス','きくえもん'];
-const OCHAPE_NICKNAMES=['にゃおうおちゃぺ','おちゃぺ','チャペック'];
+const OCHAPE_NICKNAMES=['にゃおうおちゃぺ','チャペック'];
 
 // 名前を呼ばれたか判定
 function containsCatName(text){
-  if(cats.some(c=>c&&c.name&&text.includes(c.name))) return true;
+  // 猫の実際の名前（ユーザー名と一致する場合は除外）
+  if(cats.some(c=>c&&c.name&&c.name!==myName&&text.includes(c.name))) return true;
   const nyao=cats.find(c=>isNyao(c)&&c.name==='にゃおうキックス');
   if(nyao) return NYAOU_NICKNAMES.some(n=>text.includes(n));
   const ochape=cats.find(c=>c.name==='にゃおうおちゃぺ');
