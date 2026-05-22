@@ -506,12 +506,6 @@ const STG=[
   {n:'ねこ',      e:'😺', d:5,    img:'https://TKYK-HRG.github.io/nekocchi/mike2.jpg'},
   {n:'にゃおうさま',e:'👑',d:10,  img:'https://TKYK-HRG.github.io/nekocchi/king.jpg'},
 ];
-// にゃおうおちゃぺ専用アイコン
-function catImg(cat){
-  const st=stOf(cat);
-  if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpeg';
-  return st.img||null;
-}
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
 const TNEG=DEMO?4*60*1000:4*24*60*60*1000; // 4日で逃げる
 const TTV=DEMO?15*1000:6*60*60*1000;
@@ -718,15 +712,15 @@ function startRealtimeSync(){
 }
 
 // 進化通知キュー処理
-function checkEvoQueue(queueRaw){
-  if(!queueRaw||!myName)return;
-  // Firebaseはarrayをobjectに変換するのでObject.valuesで戻す
-  const queue=Array.isArray(queueRaw)?queueRaw:Object.values(queueRaw);
+function checkEvoQueue(queue){
+  if(!queue||!myName)return;
   queue.forEach((ev,idx)=>{
-    if(!ev)return;
+    // 自分がまだ見ていない通知だけ処理
     if(ev.seen&&ev.seen.includes(myName))return;
+    // 対応する猫を探す
     const cat=cats.find(c=>c.id===ev.catId);
     if(!cat)return;
+    // 既読マーク
     if(!state.evoQueue)state.evoQueue=[];
     if(!state.evoQueue[idx])state.evoQueue[idx]=ev;
     if(!state.evoQueue[idx].seen)state.evoQueue[idx].seen=[];
@@ -734,15 +728,17 @@ function checkEvoQueue(queueRaw){
       state.evoQueue[idx].seen.push(myName);
       save();
     }
+    // 通知＋名前変更UI表示
     notify(cat.name+' が「'+ev.stName+'」に進化したにゃ！'+ev.stEmoji);
     confetti();
     setTimeout(()=>showRenameUI(cat),1000);
   });
-  // 全員が見た通知を削除
+  // 全員が見た通知は削除
   const users=window._cachedUsers||[];
-  if(state.evoQueue&&users.length>0){
+  if(state.evoQueue){
     state.evoQueue=state.evoQueue.filter(ev=>
-      ev&&(!ev.seen||ev.seen.length<users.length)
+      !ev.seen||ev.seen.length<users.length||
+      (Date.now()-ev.ts)<7*24*60*60*1000 // 7日以上古いものも削除
     );
   }
 }
@@ -832,8 +828,8 @@ function showRenameUI(cat){
   if(!area)return;
   const st=stOf(cat);
   const wrapId='rename_'+Date.now();
-  const avHtml=catImg(cat)
-    ?`<img src="${catImg(cat)}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
+  const avHtml=st?.img
+    ?`<img src="${st.img}" style="width:30px;height:30px;border-radius:50%;object-fit:cover;flex-shrink:0;">`
     :`<div class="av">${st.e}</div>`;
   const wrap=document.createElement('div');wrap.id='renameUI';wrap.className='mr';
   wrap.innerHTML=`
@@ -880,17 +876,11 @@ function checkEvo(){
       const st=STG[cur];
 
       if(st.n==='にゃおうさま'){
+        // にゃおうさまは自動で「にゃおうキックス」に改名
         const oldName=cat.name;
-        // 1匹目→にゃおうキックス、2匹目以降→にゃおうおちゃぺ
-        const nyaoCount=cats.filter(c=>isNyao(c)).length;
-        const newName=nyaoCount<=1?'にゃおうキックス':'にゃおうおちゃぺ';
-        cat.name=newName;
+        cat.name='にゃおうキックス';
         notify(oldName+' が「にゃおうさま」に進化した！👑');
-        if(newName==='にゃおうおちゃぺ'){
-          catType('にゃおうおちゃぺ「…zzz...zzz...👑💤」',400,'にゃおうおちゃぺ');
-        } else {
-          catType('にゃおうキックス「ついに覚醒したのじゃ！👑 にゃおうキックスと呼ぶのじゃ！✨」',400,'にゃおうキックス');
-        }
+        catType('にゃおうキックス「ついに覚醒したのじゃ！👑 にゃおうキックスと呼ぶのじゃ！✨」',400,'にゃおうキックス');
         confetti();
         checkTravel(cat);
       } else if(st.n==='ねこ'){
@@ -1253,46 +1243,60 @@ let localMsgCount=0;
 
 // にゃおうキックスのニックネーム
 const NYAOU_NICKNAMES=['にゃおうキックス','にゃおう','キックス','きくえもん'];
-const OCHAPE_NICKNAMES=['にゃおうおちゃぺ','チャペック'];
 
 // 名前を呼ばれたか判定
 function containsCatName(text){
-  // 猫の実際の名前（ユーザー名と一致する場合は除外）
-  if(cats.some(c=>c&&c.name&&c.name!==myName&&text.includes(c.name))) return true;
-  const nyao=cats.find(c=>isNyao(c)&&c.name==='にゃおうキックス');
+  // 通常の猫名
+  if(cats.some(c=>c&&c.name&&text.includes(c.name))) return true;
+  // にゃおうキックスのニックネーム（にゃおうさまステージの猫がいる場合）
+  const nyao=cats.find(c=>isNyao(c));
   if(nyao) return NYAOU_NICKNAMES.some(n=>text.includes(n));
-  const ochape=cats.find(c=>c.name==='にゃおうおちゃぺ');
-  if(ochape) return OCHAPE_NICKNAMES.some(n=>text.includes(n));
   return false;
 }
 
 let praiseCount=0; // 褒め言葉カウンター
 
 function catCmt(text){
-  // 名前を呼ばれた場合を最優先
+  // 名前を呼ばれた場合を最優先（褒め言葉より先に判定）
   if(containsCatName(text)){
     const n=Math.random();
     const speaker=cats.find(c=>c&&c.name&&text.includes(c.name)&&!c.traveling)
-      || (cats.find(c=>c.name==='にゃおうキックス'&&!c.traveling&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
-      || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&!c.traveling&&OCHAPE_NICKNAMES.some(k=>text.includes(k))))
+      || (cats.find(c=>isNyao(c)&&!c.traveling&&NYAOU_NICKNAMES.some(n=>text.includes(n))))
       || cats[0];
     if(!speaker) return null;
 
-    // にゃおうおちゃぺは常にzzz
-    if(speaker.name==='にゃおうおちゃぺ'){
-      return {cat:speaker, text:r(['zzz...zzz...💤','…zzz...💤','zzz...💤😴','…zzz...zzz...💤'])};
-    }
-
     const shaaRecent=(Date.now()-shaaTs)<10000;
+
     if(shaaRecent){
-      if(n<0.60){state.love=Math.max(0,state.love-10);state.happy=Math.max(0,state.happy-10);save();updateHouse();return {cat:speaker, text:r(WUU)};}
-      if(n<0.80){state.happy=Math.max(0,state.happy-5);state.love=Math.max(0,state.love-7);shaaTs=Date.now();save();updateHouse();return {cat:speaker, text:r(SHAA)};}
+      if(n<0.60){
+        state.love=Math.max(0,state.love-10);
+        state.happy=Math.max(0,state.happy-10);
+        save();updateHouse();
+        return {cat:speaker, text:r(WUU)};
+      }
+      if(n<0.80){
+        state.happy=Math.max(0,state.happy-5);
+        state.love=Math.max(0,state.love-7);
+        shaaTs=Date.now();
+        save();updateHouse();
+        return {cat:speaker, text:r(SHAA)};
+      }
       return {cat:speaker, text:r(NYAN)};
     }
+
+    // 通常時：55%にゃ、25%シャー、15%無視、5%ウー
     if(n<0.55) return {cat:speaker, text:r(NYAN)};
-    if(n<0.80){state.happy=Math.max(0,state.happy-5);state.love=Math.max(0,state.love-7);shaaTs=Date.now();save();updateHouse();return {cat:speaker, text:r(SHAA)};}
-    if(n<0.95) return null;
-    state.love=Math.max(0,state.love-10);state.happy=Math.max(0,state.happy-10);save();updateHouse();
+    if(n<0.80){
+      state.happy=Math.max(0,state.happy-5);
+      state.love=Math.max(0,state.love-7);
+      shaaTs=Date.now();
+      save();updateHouse();
+      return {cat:speaker, text:r(SHAA)};
+    }
+    if(n<0.95) return null; // 15%：無視
+    state.love=Math.max(0,state.love-10);
+    state.happy=Math.max(0,state.happy-10);
+    save();updateHouse();
     return {cat:speaker, text:r(WUU)};
   }
 
@@ -1312,47 +1316,6 @@ function catCmt(text){
     }
     return null;
   }
-
-  // 通常：6回に1回
-  localMsgCount++;
-  if(localMsgCount % 6 !== 0) return null;
-
-  const nyao=cats.find(c=>isNyao(c)&&!c.traveling);
-  const normal=cats.find(c=>!c.traveling&&!isNyao(c));
-  const speaker=nyao||normal||cats[0];
-  if(!speaker) return null;
-
-  if(isNyao(speaker)){
-    const sc=senti(text,true),h=new Date().getHours();
-    let line;
-    if(sc>=3) line=r(NYAO_JP.pos);
-    else if(sc<=-1) line=r(NYAO_JP.neg);
-    else if(text.length>30) line=r(NYAO_JP.lon);
-    else if(text.length<5) line=r(NYAO_JP.shr);
-    else if(h>=21||h<=4) line=r(NYAO_JP.eve);
-    else if(h<=9) line=r(NYAO_JP.mor);
-    else line=r([...NYAO_JP.pos,...NYAO_JP.lon]);
-    return {cat:speaker, text:line};
-  } else {
-    return {cat:speaker, text:r(NYAN)};
-  }
-}
-
-  // 褒め言葉 → 3回カウントでころころ発動
-  if(containsPraise(text)){
-    praiseCount++;
-    if(praiseCount>=3){
-      praiseCount=0;
-      const speaker=cats.find(c=>!c.traveling)||cats[0];
-      if(speaker){
-        state.happy=Math.min(100,state.happy+5);
-        save();updateHouse();
-        setTimeout(()=>catType(r(KOROKORO),1400,speaker.name),0);
-        setTimeout(()=>catType(r(KOROKORO),2900,speaker.name),0);
-        return {cat:speaker, text:r(KOROKORO)};
-      }
-    }
-    return null;
 
   // 通常：6回に1回
   localMsgCount++;
@@ -1456,9 +1419,9 @@ function renderMsgs(){
     } else if(isCat){
       const tc=cats.find(c=>c.name===m.catName)||cats[0];
       if(tc){
-        const img=catImg(tc);
-        if(img) avImg=img;
-        else { avEmoji=stOf(tc).e; avClass='av'; avText=true; }
+        const tst=stOf(tc);
+        if(tst.img) avImg=tst.img;
+        else { avEmoji=tst.e; avClass='av'; avText=true; }
       } else { avEmoji='🐱'; avText=true; }
     } else {
       avEmoji='🐱'; avClass='av av-other'; avText=true; // 白猫
@@ -1568,9 +1531,9 @@ function renderCats(){
     if(cat.traveling){const b=document.createElement('div');b.className='tbdg';b.textContent='✈️旅中';card.appendChild(b);}
     if(st.n==='たまご'){const b=document.createElement('div');b.className='ebdg';b.textContent='🥚NEW';card.appendChild(b);}
     const ce=document.createElement(st.img?'img':'div');
-    if(catImg(cat)&&!cat.traveling){
+    if(st.img&&!cat.traveling){
       ce.className='ce-img';
-      ce.src=catImg(cat);
+      ce.src=st.img;
       ce.alt=st.n;
     } else {
       ce.className='ce';
@@ -1721,7 +1684,6 @@ function tryEnter(){
   document.getElementById('lerr').textContent='つないでるにゃ…🐾';
   gu(u=>{
     window._cachedUsers=u;
-    document.getElementById('lerr').textContent='🐛 users:'+JSON.stringify(u)+' name:'+name;
     if(u.includes(name)){myName=name;enterApp();return;}
     if(u.length<2){
       const nu=[...u,name];su(nu);window._cachedUsers=nu;
