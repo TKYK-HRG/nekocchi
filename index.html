@@ -1271,8 +1271,11 @@ function catCmt(text){
       || cats[0];
     if(!speaker) return null;
 
-    // にゃおうおちゃぺは常にZzz
+    // にゃおうおちゃぺは専用セリフ
     if(speaker.name==='にゃおうおちゃぺ'){
+      const n2=Math.random();
+      if(n2<0.2) return {cat:speaker, text:'💩ニャニャ'};
+      if(n2<0.4) return {cat:speaker, text:'しゅいニャせーん'};
       return {cat:speaker, text:r(['Zzz...Zzz...💤','…Zzz...💤','Zzz...💤😴','…Zzz...Zzz...💤'])};
     }
 
