@@ -509,6 +509,7 @@ const STG=[
 // にゃおうおちゃぺ専用アイコン
 function catImg(cat){
   if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpg';
+  if(cat.name==='にゃおうみけぽん') return 'https://TKYK-HRG.github.io/nekocchi/mikepon.jpg';
   return stOf(cat).img||null;
 }
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
@@ -881,11 +882,23 @@ function checkEvo(){
       const st=STG[cur];
 
       if(st.n==='にゃおうさま'){
-        // にゃおうさまは自動で「にゃおうキックス」に改名
         const oldName=cat.name;
-        cat.name='にゃおうキックス';
+        // 何匹目のにゃおうさまか
+        const nyaoCount=cats.filter(c=>isNyao(c)).length;
+        let newName,newMsg;
+        if(nyaoCount<=1){
+          newName='にゃおうキックス';
+          newMsg='にゃおうキックス「ついに覚醒したのじゃ！👑 にゃおうキックスと呼ぶのじゃ！✨」';
+        }else if(nyaoCount===2){
+          newName='にゃおうおちゃぺ';
+          newMsg='にゃおうおちゃぺ「…Zzz...💤」';
+        }else{
+          newName='にゃおうみけぽん';
+          newMsg='にゃおうみけぽん「にゃおうにゃおう！！👑🐾 みけぽんだにゃ！✨」';
+        }
+        cat.name=newName;
         notify(oldName+' が「にゃおうさま」に進化した！👑');
-        catType('にゃおうキックス「ついに覚醒したのじゃ！👑 にゃおうキックスと呼ぶのじゃ！✨」',400,'にゃおうキックス');
+        catType(newMsg,400,newName);
         confetti();
         checkTravel(cat);
       } else if(st.n==='ねこ'){
@@ -1249,6 +1262,7 @@ let localMsgCount=0;
 // にゃおうキックスのニックネーム
 const NYAOU_NICKNAMES=['にゃおうキックス','にゃおう','キックス','きくえもん'];
 const OCHAPE_NICKNAMES=['にゃおうおちゃぺ','チャペック'];
+const MIKEPON_NICKNAMES=['にゃおうみけぽん','みけぽん'];
 
 // 名前を呼ばれたか判定
 function containsCatName(text){
@@ -1257,6 +1271,8 @@ function containsCatName(text){
   if(nyao&&NYAOU_NICKNAMES.some(n=>text.includes(n))) return true;
   const ochape=cats.find(c=>c.name==='にゃおうおちゃぺ');
   if(ochape&&OCHAPE_NICKNAMES.some(n=>text.includes(n))) return true;
+  const mikepon=cats.find(c=>c.name==='にゃおうみけぽん');
+  if(mikepon&&MIKEPON_NICKNAMES.some(n=>text.includes(n))) return true;
   return false;
 }
 
@@ -1267,7 +1283,9 @@ function catCmt(text){
   if(containsCatName(text)){
     const n=Math.random();
     const speaker=cats.find(c=>c&&c.name&&text.includes(c.name)&&!c.traveling)
-      || (cats.find(c=>isNyao(c)&&!c.traveling&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
+      || (cats.find(c=>c.name==='にゃおうキックス'&&!c.traveling&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
+      || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&!c.traveling&&OCHAPE_NICKNAMES.some(k=>text.includes(k))))
+      || (cats.find(c=>c.name==='にゃおうみけぽん'&&!c.traveling&&MIKEPON_NICKNAMES.some(k=>text.includes(k))))
       || cats[0];
     if(!speaker) return null;
 
