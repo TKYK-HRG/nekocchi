@@ -923,16 +923,33 @@ function checkEvo(){
 }
 
 function checkTravel(cat){
-  // Any nyaousama travels when total cats > 3
-  if(cats.length>3&&!cat.traveling){
-    cat.traveling=true;save();
-    setTimeout(()=>{
-      const travelCount=cats.filter(c=>c.traveling).length;
-      catType('✈️ '+cat.name+'「旅に出ることにしたのじゃ！\nたまに写真を送るぞ📸 ふたりのこと、忘れないにゃ…」',400,cat.name);
-      if(travelCount>1) catType(cat.name+'「旅猫が'+travelCount+'匹になったのじゃ！写真がどんどん届くぞ！📸📸」',1800,cat.name);
-      schedTravel(cat.id);
-    },1200);
-  }
+  if(cats.length<=3) return;
+  // 旅に出ていないにゃおうさまの中で一番古い1匹だけ旅立つ
+  const staying=cats.filter(c=>isNyao(c)&&!c.traveling).sort((a,b)=>a.born-b.born);
+  if(staying.length===0) return;
+  const oldest=staying[0];
+  if(oldest.traveling) return;
+  oldest.traveling=true;save();
+  setTimeout(()=>{
+    const travelCount=cats.filter(c=>c.traveling).length;
+    catType('✈️ '+oldest.name+'「旅に出ることにしたのじゃ！\nたまに写真を送るぞ📸 ふたりのこと、忘れないにゃ…」',400,oldest.name);
+    if(travelCount>1) catType(oldest.name+'「旅猫が'+travelCount+'匹になったのじゃ！写真がどんどん届くぞ！📸📸」',1800,oldest.name);
+    schedTravel(oldest.id);
+  },1200);
+}
+
+// ログイン時・猫追加時に旅判定（1匹ずつ）
+function checkAllTravel(){
+  if(cats.length<=3) return;
+  // 超過分だけ旅立たせる（1匹ずつ）
+  const over=cats.length-3;
+  const staying=cats.filter(c=>isNyao(c)&&!c.traveling).sort((a,b)=>a.born-b.born);
+  const toTravel=staying.slice(0,over);
+  toTravel.forEach(cat=>{
+    cat.traveling=true;
+    schedTravel(cat.id);
+  });
+  if(toTravel.length>0) save();
 }
 
 function schedTravel(id){
@@ -1738,6 +1755,7 @@ function enterApp(onReady){
   document.getElementById('hi').textContent='🐾 よみこみちゅう…';
   load(()=>{
     updateHouse();renderMsgs();updateAlbum();updateBadges();checkEvo();checkNeglect();
+    checkAllTravel(); // 旅に出るべき猫を確認
     // ログイン時に未確認の進化通知をチェック
     if(state.evoQueue&&state.evoQueue.length>0) checkEvoQueue(state.evoQueue);
     // ログイン時に放置分を計算（ただし1時間以内なら不要）
