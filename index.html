@@ -900,7 +900,7 @@ function checkEvo(){
         notify(oldName+' が「にゃおうさま」に進化した！👑');
         catType(newMsg,400,newName);
         confetti();
-        checkTravel(cat);
+        checkTravel();
       } else if(st.n==='ねこ'){
         // ねこ進化時は名前変更UI＋通知キューに積む
         notify(cat.name+' が「ねこ」に進化した！😺');
@@ -922,38 +922,41 @@ function checkEvo(){
   if(changed)save();
 }
 
-function checkTravel(cat){
-  if(cats.length<=3) return;
-  // 旅に出ていないにゃおうさまの中で一番古い1匹だけ旅立つ
-  const staying=cats.filter(c=>isNyao(c)&&!c.traveling).sort((a,b)=>a.born-b.born);
-  if(staying.length===0) return;
-  const oldest=staying[0];
-  if(oldest.traveling) return;
-  oldest.traveling=true;save();
-  setTimeout(()=>{
-    const travelCount=cats.filter(c=>c.traveling).length;
-    catType('✈️ '+oldest.name+'「旅に出ることにしたのじゃ！\nたまに写真を送るぞ📸 ふたりのこと、忘れないにゃ…」',400,oldest.name);
-    if(travelCount>1) catType(oldest.name+'「旅猫が'+travelCount+'匹になったのじゃ！写真がどんどん届くぞ！📸📸」',1800,oldest.name);
-    schedTravel(oldest.id);
-  },1200);
+// ── 旅システム（ローテーション方式）──
+// 常に1匹だけ旅中。写真が届いたら帰還→次のにゃおうがランダム出発
+
+function startTravel(cat){
+  if(cat.traveling) return;
+  cat.traveling=true;
+  save();
+  catType('✈️ '+cat.name+'「旅に出るのじゃ！写真を送るぞ📸」',400,cat.name);
+  schedTravel(cat.id);
 }
 
-// ログイン時・猫追加時に旅判定（1匹ずつ）
+function checkTravel(){
+  if(cats.length<=3) return; // 3匹以下は旅なし
+  const traveling=cats.filter(c=>c.traveling);
+  if(traveling.length>0) return; // すでに旅中なら何もしない
+  // にゃおうさまからランダムに1匹選んで旅立たせる
+  const nyaos=cats.filter(c=>isNyao(c));
+  if(nyaos.length===0) return;
+  const cat=nyaos[Math.floor(Math.random()*nyaos.length)];
+  startTravel(cat);
+}
+
 function checkAllTravel(){
+  // ログイン時：旅中が0匹かつ猫4匹以上なら1匹出発
   if(cats.length<=3) return;
-  // 超過分だけ旅立たせる（1匹ずつ）
-  const over=cats.length-3;
-  const staying=cats.filter(c=>isNyao(c)&&!c.traveling).sort((a,b)=>a.born-b.born);
-  const toTravel=staying.slice(0,over);
-  toTravel.forEach(cat=>{
-    cat.traveling=true;
-    schedTravel(cat.id);
-  });
-  if(toTravel.length>0) save();
+  const traveling=cats.filter(c=>c.traveling);
+  if(traveling.length>0){
+    // 旅中の猫のタイマーを再開
+    traveling.forEach(cat=>schedTravel(cat.id));
+    return;
+  }
+  checkTravel();
 }
 
 function schedTravel(id){
-  // Speed inversely proportional to number of traveling cats
   const travelCount=Math.max(1,cats.filter(c=>c.traveling).length);
   const d=(TTV/travelCount)*(0.8+Math.random()*0.4);
   setTimeout(()=>doTravel(id),d);
@@ -977,7 +980,13 @@ function doTravel(id){
   updateAlbum();
   notify('📸 '+cat.name+' から写真が届いた！('+album.length+'/100)');
   if(album.length>=100){checkClear();return;}
-  schedTravel(id);
+
+  // 帰還→次のにゃおうがランダム出発
+  cat.traveling=false;
+  save();
+  catType(cat.name+'「ただいまじゃ！次は誰が行くかにゃ〜」',400,cat.name);
+  // 少し間を置いて次の猫が出発
+  setTimeout(()=>checkTravel(),3000);
 }
 
 function checkClear(){
@@ -1299,12 +1308,17 @@ function catCmt(text){
   // 名前を呼ばれた場合を最優先（褒め言葉より先に判定）
   if(containsCatName(text)){
     const n=Math.random();
-    const speaker=cats.find(c=>c&&c.name&&text.includes(c.name)&&!c.traveling)
-      || (cats.find(c=>c.name==='にゃおうキックス'&&!c.traveling&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
-      || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&!c.traveling&&OCHAPE_NICKNAMES.some(k=>text.includes(k))))
-      || (cats.find(c=>c.name==='にゃおうみけぽん'&&!c.traveling&&MIKEPON_NICKNAMES.some(k=>text.includes(k))))
+    const speaker=cats.find(c=>c&&c.name&&text.includes(c.name))
+      || (cats.find(c=>c.name==='にゃおうキックス'&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
+      || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&OCHAPE_NICKNAMES.some(k=>text.includes(k))))
+      || (cats.find(c=>c.name==='にゃおうみけぽん'&&MIKEPON_NICKNAMES.some(k=>text.includes(k))))
       || cats[0];
     if(!speaker) return null;
+
+    // 旅中の猫は専用セリフ
+    if(speaker.traveling){
+      return {cat:speaker, text:r(['バケーションにゃ✈️','旅はええのう🌏','ホームシックにゃ😿','パスポートがにゃい🛂'])};
+    }
 
     // にゃおうおちゃぺは専用セリフ
     if(speaker.name==='にゃおうおちゃぺ'){
