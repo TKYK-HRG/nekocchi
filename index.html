@@ -928,16 +928,16 @@ function checkEvo(){
 function startTravel(cat){
   if(cat.traveling) return;
   cat.traveling=true;
+  cat.travelStartTs=Date.now();
   save();
   catType('✈️ '+cat.name+'「旅に出るのじゃ！写真を送るぞ📸」',400,cat.name);
   schedTravel(cat.id);
 }
 
 function checkTravel(){
-  if(cats.length<=3) return; // 3匹以下は旅なし
+  if(cats.length<=3) return;
   const traveling=cats.filter(c=>c.traveling);
-  if(traveling.length>0) return; // すでに旅中なら何もしない
-  // にゃおうさまからランダムに1匹選んで旅立たせる
+  if(traveling.length>0) return;
   const nyaos=cats.filter(c=>isNyao(c));
   if(nyaos.length===0) return;
   const cat=nyaos[Math.floor(Math.random()*nyaos.length)];
@@ -945,20 +945,23 @@ function checkTravel(){
 }
 
 function checkAllTravel(){
-  // ログイン時：旅中が0匹かつ猫4匹以上なら1匹出発
   if(cats.length<=3) return;
   const traveling=cats.filter(c=>c.traveling);
-  if(traveling.length>0){
-    // 旅中の猫のタイマーを再開
-    traveling.forEach(cat=>schedTravel(cat.id));
-    return;
-  }
-  checkTravel();
+  if(traveling.length===0){checkTravel();return;}
+  // 旅中の猫：経過時間を考慮してタイマー再開
+  traveling.forEach(cat=>{
+    const ts=cat.travelStartTs||Date.now();
+    const elapsed=Date.now()-ts;
+    const total=TTV*(0.8+Math.random()*0.4);
+    const remaining=Math.max(2000,total-elapsed);
+    setTimeout(()=>doTravel(cat.id),remaining);
+  });
 }
 
 function schedTravel(id){
-  const travelCount=Math.max(1,cats.filter(c=>c.traveling).length);
-  const d=(TTV/travelCount)*(0.8+Math.random()*0.4);
+  const cat=cats.find(c=>c.id===id);
+  if(cat){cat.travelStartTs=Date.now();save();}
+  const d=TTV*(0.8+Math.random()*0.4);
   setTimeout(()=>doTravel(id),d);
 }
 
