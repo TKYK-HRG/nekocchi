@@ -511,6 +511,7 @@ function catImg(cat){
   if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpg';
   if(cat.name==='にゃおうみけぽん') return 'https://TKYK-HRG.github.io/nekocchi/mikepon.jpg';
   if(cat.name==='フミ') return 'https://TKYK-HRG.github.io/nekocchi/fumi02.jpg';
+  if(cat.name==='にゃおうアセラ') return 'https://TKYK-HRG.github.io/nekocchi/acera.jpg';
   return stOf(cat).img||null;
 }
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
@@ -1293,6 +1294,7 @@ let localMsgCount=0;
 const NYAOU_NICKNAMES=['にゃおうキックス','にゃおう','キックス','きくえもん'];
 const OCHAPE_NICKNAMES=['にゃおうおちゃぺ','チャペック'];
 const MIKEPON_NICKNAMES=['にゃおうみけぽん','みけぽん'];
+const ACERA_NICKNAMES=['にゃおうアセラ','アセラ'];
 
 // 名前を呼ばれたか判定
 function containsCatName(text){
@@ -1303,6 +1305,8 @@ function containsCatName(text){
   if(ochape&&OCHAPE_NICKNAMES.some(n=>text.includes(n))) return true;
   const mikepon=cats.find(c=>c.name==='にゃおうみけぽん');
   if(mikepon&&MIKEPON_NICKNAMES.some(n=>text.includes(n))) return true;
+  const acera=cats.find(c=>c.name==='にゃおうアセラ');
+  if(acera&&ACERA_NICKNAMES.some(n=>text.includes(n))) return true;
   return false;
 }
 
@@ -1316,12 +1320,18 @@ function catCmt(text){
       || (cats.find(c=>c.name==='にゃおうキックス'&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
       || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&OCHAPE_NICKNAMES.some(k=>text.includes(k))))
       || (cats.find(c=>c.name==='にゃおうみけぽん'&&MIKEPON_NICKNAMES.some(k=>text.includes(k))))
+      || (cats.find(c=>c.name==='にゃおうアセラ'&&ACERA_NICKNAMES.some(k=>text.includes(k))))
       || cats[0];
     if(!speaker) return null;
 
     // 旅中の猫は専用セリフ
     if(speaker.traveling){
       return {cat:speaker, text:r(['バケーションにゃ✈️','旅はええのう🌏','ホームシックにゃ😿','パスポートがにゃい🛂'])};
+    }
+
+    // にゃおうアセラはゴロゴロ
+    if(speaker.name==='にゃおうアセラ'){
+      return {cat:speaker, text:r(['ごろごろごろ…💕','ごろごろ〜😸','ごろごろごろごろ♥','ごろ…ごろ…ごろごろ！🐾'])};
     }
 
     // にゃおうおちゃぺは専用セリフ
