@@ -1771,7 +1771,24 @@ function enterApp(onReady){
   document.getElementById('app').classList.remove('hidden');
   document.getElementById('hi').textContent='🐾 よみこみちゅう…';
   load(()=>{
+    // 3日以上古いメッセージをFirebaseから削除
+    REF.child('msgs').once('value',snap=>{
+      if(!snap.val())return;
+      const cutoff=Date.now()-T3D;
+      const updates={};
+      snap.forEach(child=>{
+        const m=child.val();
+        if(m&&m.ts&&m.ts<cutoff) updates[child.key]=null;
+      });
+      if(Object.keys(updates).length>0){
+        REF.child('msgs').update(updates);
+        notify('🗑️ 古いメッセージを'+Object.keys(updates).length+'件削除したにゃ');
+      }
+    });
     updateHouse();renderMsgs();updateAlbum();updateBadges();checkEvo();checkNeglect();
+    // 一回限りの名前移行：とら→フミ
+    const tora=cats.find(c=>c.name==='とら');
+    if(tora){tora.name='フミ';save();notify('🐱 とら の名前をフミに変更したにゃ！');}
     checkAllTravel(); // 旅に出るべき猫を確認
     // ログイン時に未確認の進化通知をチェック
     if(state.evoQueue&&state.evoQueue.length>0) checkEvoQueue(state.evoQueue);
