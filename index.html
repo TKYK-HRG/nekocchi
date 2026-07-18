@@ -510,6 +510,7 @@ const STG=[
 function catImg(cat){
   if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpg';
   if(cat.name==='にゃおうみけぽん') return 'https://TKYK-HRG.github.io/nekocchi/mikepon.jpg';
+  if(cat.name==='フミ') return 'https://TKYK-HRG.github.io/nekocchi/fumi02.jpg';
   return stOf(cat).img||null;
 }
 const T3D=DEMO?3*60*1000:3*24*60*60*1000;
@@ -1786,9 +1787,6 @@ function enterApp(onReady){
       }
     });
     updateHouse();renderMsgs();updateAlbum();updateBadges();checkEvo();checkNeglect();
-    // 一回限りの名前移行：とら→フミ
-    const tora=cats.find(c=>c.name==='とら');
-    if(tora){tora.name='フミ';save();notify('🐱 とら の名前をフミに変更したにゃ！');}
     checkAllTravel(); // 旅に出るべき猫を確認
     // ログイン時に未確認の進化通知をチェック
     if(state.evoQueue&&state.evoQueue.length>0) checkEvoQueue(state.evoQueue);
