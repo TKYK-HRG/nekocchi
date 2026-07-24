@@ -508,7 +508,7 @@ const STG=[
 ];
 // にゃおうおちゃぺ専用アイコン
 function catImg(cat){
-  if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpg';
+  if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape3.jpg';
   if(cat.name==='にゃおうみけぽん') return 'https://TKYK-HRG.github.io/nekocchi/mikepon.jpg';
   if(cat.name==='フミ') return 'https://TKYK-HRG.github.io/nekocchi/fumi02.jpg';
   if(cat.name==='フミタン') return 'https://TKYK-HRG.github.io/nekocchi/fumi02.jpg';
@@ -1335,12 +1335,14 @@ function catCmt(text){
       return {cat:speaker, text:r(['ごろごろごろ…💕','ごろごろ〜😸','ごろごろごろごろ♥','ごろ…ごろ…ごろごろ！🐾'])};
     }
 
-    // にゃおうおちゃぺは専用セリフ
+    // にゃおうおちゃぺはロボット口調
     if(speaker.name==='にゃおうおちゃぺ'){
       const n2=Math.random();
-      if(n2<0.2) return {cat:speaker, text:'💩ニャニャ'};
-      if(n2<0.4) return {cat:speaker, text:'しゅいニャせーん'};
-      return {cat:speaker, text:r(['Zzz...Zzz...💤','…Zzz...💤','Zzz...💤😴','…Zzz...Zzz...💤'])};
+      if(n2<0.2) return {cat:speaker, text:'ニャ…ニャ…ショリショリ…⚙️'};
+      if(n2<0.4) return {cat:speaker, text:'エラー：ニャ…再起動中…🤖'};
+      if(n2<0.6) return {cat:speaker, text:'ニャニャニャ…処理中…⚙️💤'};
+      if(n2<0.8) return {cat:speaker, text:'…ニャ…バッテリー低下…💤🔋'};
+      return {cat:speaker, text:'Zzz...ショリ...Zzz...⚙️'};
     }
 
     const shaaRecent=(Date.now()-shaaTs)<10000;
