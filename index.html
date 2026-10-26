@@ -335,6 +335,7 @@ html,body{height:100%;overflow:hidden;font-family:'Zen Maru Gothic',sans-serif;b
       <div id="boostBanner" style="display:none"></div>
       <div class="cg" id="cg"></div>
       <div class="nw hidden" id="nw">😿 きぶんが下がってるにゃ…お話ししてよ！放置4日で逃げちゃうにゃ！</div>
+      <div id="escBox"></div>
       <div class="hi" id="hi"></div>
     </div>
     <!-- CHAT -->
@@ -1047,6 +1048,7 @@ function checkNeglect(){
     if(stay.length>0){
       const f=stay[Math.floor(Math.random()*stay.length)];
       cats=cats.filter(c=>c.id!==f.id);
+      try{REF.child('escaped').child(String(f.id)).set(Object.assign({},f,{traveling:false,escapedAt:Date.now()}));}catch(e){}
       state.lastMsg=Date.now(); // リセットして連続逃げを防ぐ
       save();
       catType('😿 '+f.name+' が4日も放置されて逃げてしまったにゃ…\nもっとお話ししてね',400,f.name);
@@ -1571,6 +1573,53 @@ function renderMsgs(){
   area.scrollTo({top:area.scrollHeight,behavior:'smooth'});
 }
 
+// ══ ESCAPED CATS（連れ戻し） ══
+const RESCUE_SEED=[
+  {id:1775979442762,born:1775979442762,si:3,traveling:false,name:'にゃおうキックス',bonusDays:0.325},
+  {id:1778367813792,born:1778367813792,si:3,traveling:false,named:true,name:'にゃおうおちゃぺ',bonusDays:0.117}
+];
+let escapedList=[];
+function refreshEscaped(){
+  REF.child('escaped').once('value',snap=>{
+    const v=snap.val()||{};
+    const map={};
+    RESCUE_SEED.forEach(c=>map[c.id]=c);
+    Object.values(v).forEach(c=>{if(c&&c.id)map[c.id]=c;});
+    escapedList=Object.values(map).filter(c=>!cats.some(x=>x.id===c.id));
+    renderEscaped();
+  });
+}
+function renderEscaped(){
+  const box=document.getElementById('escBox');if(!box)return;
+  box.innerHTML='';
+  if(!escapedList.length)return;
+  const wrap=document.createElement('div');
+  wrap.style.cssText='margin:0 14px 12px;padding:10px 12px;border-radius:14px;background:#fff3e6;border:1px dashed #e0a060;';
+  const t=document.createElement('div');t.style.cssText='font-size:13px;font-weight:bold;margin-bottom:6px;';t.textContent='😿 逃げた猫たち';wrap.appendChild(t);
+  escapedList.forEach(c=>{
+    const r=document.createElement('div');r.style.cssText='display:flex;align-items:center;justify-content:space-between;gap:8px;padding:4px 0;font-size:13px;';
+    const n=document.createElement('span');n.textContent='🐱 '+c.name;
+    const b=document.createElement('button');b.textContent='🏠 連れ戻す';
+    b.style.cssText='border:none;border-radius:12px;padding:6px 12px;background:linear-gradient(135deg,#F4A261,#E76F51);color:#fff;font-size:12px;';
+    b.onclick=()=>rescueCat(c.id);
+    r.appendChild(n);r.appendChild(b);wrap.appendChild(r);
+  });
+  box.appendChild(wrap);
+}
+function rescueCat(id){
+  const c=escapedList.find(x=>x.id===id);if(!c)return;
+  if(cats.some(x=>x.id===id))return;
+  const cat=Object.assign({},c,{traveling:false});delete cat.escapedAt;
+  cats.push(cat);
+  state.lastMsg=Date.now();
+  save();
+  try{REF.child('escaped').child(String(id)).remove();}catch(e){}
+  escapedList=escapedList.filter(x=>x.id!==id);
+  renderEscaped();renderCats();
+  catType('🏠 '+c.name+' が帰ってきたにゃ！おかえりにゃ〜',400,c.name);
+  notify('🏠 '+c.name+' が帰ってきた！');
+}
+
 // ══ HOUSE ══
 function updateHouse(){
   const u=window._cachedUsers||[];
@@ -1578,7 +1627,7 @@ function updateHouse(){
   document.getElementById('hd').textContent=new Date().toLocaleDateString('ja-JP',{year:'numeric',month:'long',day:'numeric'});
   document.getElementById('slv').style.width=state.love+'%';document.getElementById('vl').textContent=state.love+'%';
   document.getElementById('shp').style.width=state.happy+'%';document.getElementById('vh').textContent=state.happy+'%';
-  renderCats();updateChuruBtn();checkNeglect();
+  renderCats();updateChuruBtn();checkNeglect();refreshEscaped();
   const travel=cats.filter(c=>c.traveling);
 
   // love コメント（3段階）
