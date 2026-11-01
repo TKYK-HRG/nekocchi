@@ -949,31 +949,29 @@ function checkTravel(){
 }
 
 function checkAllTravel(){
-  if(cats.length<=3) return;
   const traveling=cats.filter(c=>c.traveling);
   if(traveling.length===0){checkTravel();return;}
-  // 旅中の猫：経過時間を考慮してタイマー再開
-  traveling.forEach(cat=>{
-    const ts=cat.travelStartTs||Date.now();
-    const elapsed=Date.now()-ts;
-    const total=TTV*(0.8+Math.random()*0.4);
-    const remaining=Math.max(2000,total-elapsed);
-    setTimeout(()=>doTravel(cat.id),remaining);
+  tickTravel();
+}
+
+// 旅の帰還判定：travelStartTs から TTV 経過したら帰還（60秒ごとに確認・再読込にも強い）
+function tickTravel(){
+  cats.filter(c=>c.traveling).forEach(cat=>{
+    if(!cat.travelStartTs){cat.travelStartTs=Date.now();save();return;}
+    if(Date.now()-cat.travelStartTs>=TTV) doTravel(cat.id);
   });
 }
 
 function schedTravel(id){
   const cat=cats.find(c=>c.id===id);
   if(cat){cat.travelStartTs=Date.now();save();}
-  const d=TTV*(0.8+Math.random()*0.4);
-  setTimeout(()=>doTravel(id),d);
 }
 
 function doTravel(id){
   const cat=cats.find(c=>c.id===id);
   if(!cat||!cat.traveling)return;
   const rem=SP.filter(s=>!album.find(a=>a.sid===s.i));
-  if(!rem.length){checkClear();return;}
+  if(!rem.length){cat.traveling=false;save();checkClear();return;}
   const spot=rem[Math.floor(Math.random()*rem.length)];
   album.push({sid:spot.i,cat:cat.name,ts:Date.now()});
   const tMsg={s:'__T__',catName:cat.name,spot,ts:Date.now()};
@@ -1888,7 +1886,7 @@ function enterApp(onReady){
     initBilliardsListeners();
     updateBilliardsBtn();
     setInterval(updateChuruBtn,60000);
-    setInterval(()=>{applyBoostTick();checkEvo();if(curTab==='H')updateHouse();},60000);
+    setInterval(()=>{applyBoostTick();checkEvo();tickTravel();if(curTab==='H')updateHouse();},60000);
     setInterval(()=>{applyDecay();checkNeglect();},60*60*1000); // 1時間ごと
   });
 }
