@@ -509,6 +509,7 @@ const STG=[
 ];
 // にゃおうおちゃぺ専用アイコン
 function catImg(cat){
+  if(cat.name==='ちゃぺぞう') return 'https://TKYK-HRG.github.io/nekocchi/ochape2.jpg';
   if(cat.name==='にゃおうおちゃぺ') return 'https://TKYK-HRG.github.io/nekocchi/ochape3.jpg';
   if(cat.name==='にゃおうみけぽん') return 'https://TKYK-HRG.github.io/nekocchi/mikepon.jpg';
   if(cat.name==='フミ') return 'https://TKYK-HRG.github.io/nekocchi/fumi02.jpg';
@@ -1246,6 +1247,7 @@ function boostedAge(cat){
   return (Date.now()-cat.born)/DMS + (cat.bonusDays||0);
 }
 function stOf(cat){
+  if(cat.eternal) return STG[1]; // ずっと子猫
   const days=boostedAge(cat);
   let s=STG[0];STG.forEach(x=>{if(days>=x.d)s=x;});return s;
 }
@@ -1296,6 +1298,7 @@ const NYAOU_NICKNAMES=['にゃおうキックス','にゃおう','キックス',
 const OCHAPE_NICKNAMES=['にゃおうおちゃぺ','チャペック'];
 const MIKEPON_NICKNAMES=['にゃおうみけぽん','みけぽん'];
 const ACERA_NICKNAMES=['にゃおうアセラ','アセラ'];
+const KITTEN_LINES=['ゴメンニャサイ…🙇','ゴメンニャサイ！😿','オシッコスプレー💦','オシッコスプレー！！💦💦','ムニャムニャ…💤','ムニャムニャ…ニャ…💤','ふにゃ〜…🐾'];
 
 // 名前を呼ばれたか判定
 function containsCatName(text){
@@ -1317,7 +1320,7 @@ function catCmt(text){
   // 名前を呼ばれた場合を最優先（褒め言葉より先に判定）
   if(containsCatName(text)){
     const n=Math.random();
-    const speaker=cats.find(c=>c&&c.name&&text.includes(c.name))
+    const speaker=cats.filter(c=>c&&c.name&&c.name!==myName&&text.includes(c.name)).sort((a,b)=>b.name.length-a.name.length)[0]
       || (cats.find(c=>c.name==='にゃおうキックス'&&NYAOU_NICKNAMES.some(k=>text.includes(k))))
       || (cats.find(c=>c.name==='にゃおうおちゃぺ'&&OCHAPE_NICKNAMES.some(k=>text.includes(k))))
       || (cats.find(c=>c.name==='にゃおうみけぽん'&&MIKEPON_NICKNAMES.some(k=>text.includes(k))))
@@ -1328,6 +1331,11 @@ function catCmt(text){
     // 旅中の猫は専用セリフ
     if(speaker.traveling){
       return {cat:speaker, text:r(['バケーションにゃ✈️','旅はええのう🌏','ホームシックにゃ😿','パスポートがにゃい🛂'])};
+    }
+
+    // 子猫のおちゃぺ（シャーしない）
+    if(speaker.eternal){
+      return {cat:speaker, text:r(KITTEN_LINES)};
     }
 
     // にゃおうアセラはゴロゴロ
@@ -1417,6 +1425,8 @@ function catCmt(text){
     else if(h<=9) line=r(NYAO_JP.mor);
     else line=r([...NYAO_JP.pos,...NYAO_JP.lon]);
     return {cat:speaker, text:line};
+  } else if(speaker.eternal){
+    return {cat:speaker, text:r(KITTEN_LINES)};
   } else {
     return {cat:speaker, text:r(NYAN)};
   }
@@ -1673,7 +1683,9 @@ function renderCats(){
     // 次の進化までの残り時間
     const nextStIdx=STG.indexOf(st)+1;
     const cev=document.createElement('div');cev.className='ca';
-    if(cat.traveling){
+    if(cat.eternal){
+      cev.textContent='🐱 ずっと子猫';
+    } else if(cat.traveling){
       cev.textContent='✈️ 旅中';
     } else if(nextStIdx<STG.length){
       const nextSt=STG[nextStIdx];
@@ -1846,6 +1858,14 @@ function enterApp(onReady){
         notify('🗑️ 古いメッセージを'+Object.keys(updates).length+'件削除したにゃ');
       }
     });
+    cats.forEach(c=>{if(c.eternal&&c.name==='おちゃぺ'){c.name='ちゃぺぞう';save();}});
+    if(!state.ochapeKittenAdded){
+      state.ochapeKittenAdded=true;
+      if(!cats.some(c=>c.name==='ちゃぺぞう')){
+        cats.push({id:Date.now(),name:'ちゃぺぞう',born:Date.now(),si:1,traveling:false,named:true,eternal:true});
+      }
+      save();
+    }
     updateHouse();renderMsgs();updateAlbum();updateBadges();checkEvo();checkNeglect();
     checkAllTravel(); // 旅に出るべき猫を確認
     // ログイン時に未確認の進化通知をチェック
